@@ -22,23 +22,26 @@ Partial Class frmMain
     '코드 편집기에서는 수정하지 마세요.
     <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
+        Me.components = New System.ComponentModel.Container()
         Me.txtProgName = New System.Windows.Forms.Label()
         Me.grpSerial = New System.Windows.Forms.GroupBox()
         Me.btnDisconnect = New System.Windows.Forms.Button()
         Me.btnConnect = New System.Windows.Forms.Button()
-        Me.TextBox2 = New System.Windows.Forms.TextBox()
-        Me.Label3 = New System.Windows.Forms.Label()
         Me.Label2 = New System.Windows.Forms.Label()
         Me.txtBaud = New System.Windows.Forms.TextBox()
         Me.txtComPort = New System.Windows.Forms.TextBox()
         Me.Label1 = New System.Windows.Forms.Label()
         Me.lstRawSerial = New System.Windows.Forms.ListBox()
         Me.GroupBox1 = New System.Windows.Forms.GroupBox()
-        Me.lstData = New Hamster_Engine_Project.DBListView()
-        Me.colProtocol = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
-        Me.colKeyword = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
-        Me.colDetail = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.txtKeywordCount = New System.Windows.Forms.Label()
+        Me.lstData = New Hamster_Engine_Project.DBListView()
+        Me.colID = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
+        Me.colIssueTime = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
+        Me.colLength = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
+        Me.colRealLength = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
+        Me.colCRC = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
+        Me.colExplain = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
+        Me.timLstUpdate = New System.Windows.Forms.Timer(Me.components)
         Me.grpSerial.SuspendLayout()
         Me.GroupBox1.SuspendLayout()
         Me.SuspendLayout()
@@ -55,10 +58,10 @@ Partial Class frmMain
         '
         'grpSerial
         '
+        Me.grpSerial.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.grpSerial.Controls.Add(Me.btnDisconnect)
         Me.grpSerial.Controls.Add(Me.btnConnect)
-        Me.grpSerial.Controls.Add(Me.TextBox2)
-        Me.grpSerial.Controls.Add(Me.Label3)
         Me.grpSerial.Controls.Add(Me.Label2)
         Me.grpSerial.Controls.Add(Me.txtBaud)
         Me.grpSerial.Controls.Add(Me.txtComPort)
@@ -90,25 +93,9 @@ Partial Class frmMain
         Me.btnConnect.Text = "연결"
         Me.btnConnect.UseVisualStyleBackColor = True
         '
-        'TextBox2
-        '
-        Me.TextBox2.Location = New System.Drawing.Point(74, 95)
-        Me.TextBox2.Name = "TextBox2"
-        Me.TextBox2.Size = New System.Drawing.Size(92, 25)
-        Me.TextBox2.TabIndex = 8
-        '
-        'Label3
-        '
-        Me.Label3.Location = New System.Drawing.Point(6, 94)
-        Me.Label3.Name = "Label3"
-        Me.Label3.Size = New System.Drawing.Size(62, 25)
-        Me.Label3.TabIndex = 7
-        Me.Label3.Text = "Option"
-        Me.Label3.TextAlign = System.Drawing.ContentAlignment.MiddleRight
-        '
         'Label2
         '
-        Me.Label2.Location = New System.Drawing.Point(6, 55)
+        Me.Label2.Location = New System.Drawing.Point(6, 75)
         Me.Label2.Name = "Label2"
         Me.Label2.Size = New System.Drawing.Size(62, 25)
         Me.Label2.TabIndex = 6
@@ -117,15 +104,15 @@ Partial Class frmMain
         '
         'txtBaud
         '
-        Me.txtBaud.Location = New System.Drawing.Point(74, 55)
+        Me.txtBaud.Location = New System.Drawing.Point(74, 75)
         Me.txtBaud.Name = "txtBaud"
         Me.txtBaud.Size = New System.Drawing.Size(92, 25)
         Me.txtBaud.TabIndex = 5
-        Me.txtBaud.Text = "9600"
+        Me.txtBaud.Text = "115200"
         '
         'txtComPort
         '
-        Me.txtComPort.Location = New System.Drawing.Point(74, 16)
+        Me.txtComPort.Location = New System.Drawing.Point(74, 36)
         Me.txtComPort.Name = "txtComPort"
         Me.txtComPort.Size = New System.Drawing.Size(92, 25)
         Me.txtComPort.TabIndex = 3
@@ -133,7 +120,7 @@ Partial Class frmMain
         '
         'Label1
         '
-        Me.Label1.Location = New System.Drawing.Point(6, 16)
+        Me.Label1.Location = New System.Drawing.Point(6, 36)
         Me.Label1.Name = "Label1"
         Me.Label1.Size = New System.Drawing.Size(62, 25)
         Me.Label1.TabIndex = 2
@@ -142,63 +129,91 @@ Partial Class frmMain
         '
         'lstRawSerial
         '
+        Me.lstRawSerial.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
+            Or System.Windows.Forms.AnchorStyles.Left) _
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.lstRawSerial.Font = New System.Drawing.Font("맑은 고딕", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(129, Byte))
         Me.lstRawSerial.FormattingEnabled = True
-        Me.lstRawSerial.ItemHeight = 17
-        Me.lstRawSerial.Location = New System.Drawing.Point(239, 15)
+        Me.lstRawSerial.Location = New System.Drawing.Point(239, 14)
         Me.lstRawSerial.Margin = New System.Windows.Forms.Padding(2)
         Me.lstRawSerial.Name = "lstRawSerial"
-        Me.lstRawSerial.Size = New System.Drawing.Size(582, 106)
+        Me.lstRawSerial.Size = New System.Drawing.Size(582, 108)
         Me.lstRawSerial.TabIndex = 1
         '
         'GroupBox1
         '
+        Me.GroupBox1.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
+            Or System.Windows.Forms.AnchorStyles.Left) _
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.GroupBox1.Controls.Add(Me.txtKeywordCount)
         Me.GroupBox1.Controls.Add(Me.lstData)
         Me.GroupBox1.Location = New System.Drawing.Point(12, 176)
         Me.GroupBox1.Name = "GroupBox1"
-        Me.GroupBox1.Size = New System.Drawing.Size(826, 284)
+        Me.GroupBox1.Size = New System.Drawing.Size(826, 377)
         Me.GroupBox1.TabIndex = 10
         Me.GroupBox1.TabStop = False
         Me.GroupBox1.Text = "Data"
-        '
-        'lstData
-        '
-        Me.lstData.Columns.AddRange(New System.Windows.Forms.ColumnHeader() {Me.colProtocol, Me.colKeyword, Me.colDetail})
-        Me.lstData.Location = New System.Drawing.Point(6, 39)
-        Me.lstData.Name = "lstData"
-        Me.lstData.Size = New System.Drawing.Size(815, 239)
-        Me.lstData.TabIndex = 0
-        Me.lstData.UseCompatibleStateImageBehavior = False
-        Me.lstData.View = System.Windows.Forms.View.Details
-        '
-        'colProtocol
-        '
-        Me.colProtocol.Text = "프로토콜"
-        Me.colProtocol.Width = 80
-        '
-        'colKeyword
-        '
-        Me.colKeyword.Text = "키워드"
-        Me.colKeyword.Width = 100
-        '
-        'colDetail
-        '
-        Me.colDetail.Text = "세부 데이터"
         '
         'txtKeywordCount
         '
         Me.txtKeywordCount.Location = New System.Drawing.Point(6, 19)
         Me.txtKeywordCount.Name = "txtKeywordCount"
-        Me.txtKeywordCount.Size = New System.Drawing.Size(160, 17)
+        Me.txtKeywordCount.Size = New System.Drawing.Size(465, 17)
         Me.txtKeywordCount.TabIndex = 1
         Me.txtKeywordCount.Text = "키워드 갯수 : "
+        '
+        'lstData
+        '
+        Me.lstData.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
+            Or System.Windows.Forms.AnchorStyles.Left) _
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.lstData.Columns.AddRange(New System.Windows.Forms.ColumnHeader() {Me.colID, Me.colIssueTime, Me.colLength, Me.colRealLength, Me.colCRC, Me.colExplain})
+        Me.lstData.Location = New System.Drawing.Point(6, 39)
+        Me.lstData.Name = "lstData"
+        Me.lstData.Size = New System.Drawing.Size(815, 332)
+        Me.lstData.TabIndex = 0
+        Me.lstData.UseCompatibleStateImageBehavior = False
+        Me.lstData.View = System.Windows.Forms.View.Details
+        '
+        'colID
+        '
+        Me.colID.Text = "ID"
+        '
+        'colIssueTime
+        '
+        Me.colIssueTime.Text = "시간"
+        Me.colIssueTime.Width = 80
+        '
+        'colLength
+        '
+        Me.colLength.Text = "길이"
+        Me.colLength.Width = 50
+        '
+        'colRealLength
+        '
+        Me.colRealLength.Text = "실제길이"
+        Me.colRealLength.Width = 70
+        '
+        'colCRC
+        '
+        Me.colCRC.Text = "CRC"
+        Me.colCRC.Width = 100
+        '
+        'colExplain
+        '
+        Me.colExplain.Text = "메세지 설명"
+        Me.colExplain.Width = 450
+        '
+        'timLstUpdate
+        '
+        Me.timLstUpdate.Interval = 500
         '
         'frmMain
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(7.0!, 17.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.AutoSize = True
-        Me.ClientSize = New System.Drawing.Size(850, 472)
+        Me.ClientSize = New System.Drawing.Size(850, 565)
         Me.Controls.Add(Me.GroupBox1)
         Me.Controls.Add(Me.grpSerial)
         Me.Controls.Add(Me.txtProgName)
@@ -217,17 +232,19 @@ Partial Class frmMain
     Friend WithEvents grpSerial As System.Windows.Forms.GroupBox
     Friend WithEvents btnDisconnect As System.Windows.Forms.Button
     Friend WithEvents btnConnect As System.Windows.Forms.Button
-    Friend WithEvents TextBox2 As System.Windows.Forms.TextBox
-    Friend WithEvents Label3 As System.Windows.Forms.Label
     Friend WithEvents Label2 As System.Windows.Forms.Label
     Friend WithEvents txtBaud As System.Windows.Forms.TextBox
     Friend WithEvents txtComPort As System.Windows.Forms.TextBox
     Friend WithEvents Label1 As System.Windows.Forms.Label
     Friend WithEvents lstRawSerial As System.Windows.Forms.ListBox
     Friend WithEvents GroupBox1 As System.Windows.Forms.GroupBox
-    Friend WithEvents lstData As DBListView
-    Friend WithEvents colProtocol As System.Windows.Forms.ColumnHeader
-    Friend WithEvents colKeyword As System.Windows.Forms.ColumnHeader
-    Friend WithEvents colDetail As System.Windows.Forms.ColumnHeader
+    Friend WithEvents colLength As System.Windows.Forms.ColumnHeader
+    Friend WithEvents colID As System.Windows.Forms.ColumnHeader
+    Friend WithEvents colCRC As System.Windows.Forms.ColumnHeader
     Friend WithEvents txtKeywordCount As System.Windows.Forms.Label
+    Friend WithEvents colExplain As System.Windows.Forms.ColumnHeader
+    Friend WithEvents colRealLength As System.Windows.Forms.ColumnHeader
+    Friend WithEvents timLstUpdate As System.Windows.Forms.Timer
+    Friend WithEvents colIssueTime As System.Windows.Forms.ColumnHeader
+    Friend WithEvents lstData As DBListView
 End Class

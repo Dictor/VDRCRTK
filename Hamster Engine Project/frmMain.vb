@@ -5,127 +5,79 @@ Imports System.Threading
 Imports System.Windows.Forms
 
 Public Class frmMain
-    ' Private Serial As PInvokeSerialPort.SerialPort
     Private Serial As New SerialPort
     Private thSerial As Thread
     Private thMessage As New Thread(AddressOf ProcessMessage)
 
     Private bufRawSerial As New Queue(Of Byte)(1024)
-    Private bufMessage As New Queue(Of GPSMessage)(100)
-    Dim bufEachMessage As New List(Of Byte)
+    Private bufEachMessage As New List(Of Byte)
+    Private latestData As New Dictionary(Of String, RTCMMessage)
 
-    Private GPSData As New Dictionary(Of String, GPSMessage)
-    Private UnknownMessageID As Integer = 0
+    Private RTCMexplain As New Dictionary(Of String, String)
+    Private MessageCount As Long = 0
 
     Private Sub txtProgName_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         txtProgName.Text = Project.Version.GetName & " " & Project.Version.GetVersion(True)
-        lstData.Columns.Item(2).Width = lstData.Width - (lstData.Columns.Item(0).Width + lstData.Columns.Item(1).Width + 15)
+        For Each nowline In Split(File.ReadAllText(Application.StartupPath & "\RTCMexplain.txt"), vbCrLf)
+            Dim pline = Split(nowline, ",")
+            RTCMexplain.Add(pline(0), pline(1))
+        Next
+        lstData.Sorting = SortOrder.Descending
+        lstData.ListViewItemSorter = New ListViewComparer(1, SortOrder.Ascending)
+        Dim s = lstData.ListViewItemSorter()
     End Sub
 
-    Private Sub ProcessByteBuffer()
-        Do While bufRawSerial.Count > 0
-            Dim nowbyte = bufRawSerial.Dequeue()
-            If nowbyte = Encoding.ASCII.GetBytes("$")(0) Then 'NMEA 메세지 시작 Cut
-                If Not bufEachMessage.Count = 0 Then
-                    bufMessage.Enqueue(New GPSMessage(GPSMessage.MessageType.UNKNOWN, Nothing, bufEachMessage.ToArray))
-                    bufEachMessage.Clear()
+    Private Function WaitRTCMMessage() As RTCMMessage
+        Dim RTCMcount = 0, RTCMlen = 0, RTCMmsgid As Integer
+        Dim RTCMcrc As Long = 0
+        Dim RTCMdata As New List(Of Byte)
+        Dim result As RTCMMessage
+        Do While True
+            Do Until bufRawSerial.Count > 0 '메세지 수신까지 대기
+            Loop
+            Dim nowbyte = bufRawSerial.Dequeue
+
+            If RTCMcount = 0 Then
+                If Not nowbyte = &HD3 Then 'RTCM 헤더 수신까지 대기
+                    Continue Do
                 End If
+            ElseIf RTCMcount = 1 Then '두번째 세번째 바이트는 메세지 length
+                RTCMlen = (nowbyte And &H3) << 6
+            ElseIf RTCMcount = 2 Then
+                RTCMlen += nowbyte
+            ElseIf RTCMcount <= 2 + RTCMlen Then
+                RTCMdata.Add(nowbyte)
+            ElseIf RTCMcount > 2 + RTCMlen And RTCMcount < (2 + RTCMlen) + 2 Then
+                RTCMcrc = RTCMcrc << 8
+                RTCMcrc += nowbyte
+            ElseIf RTCMcount = (2 + RTCMlen) + 2 Then
+                RTCMcrc = RTCMcrc << 8
+                RTCMcrc += nowbyte
                 bufEachMessage.Add(nowbyte)
-            ElseIf nowbyte = Encoding.ASCII.GetBytes(vbCr)(0) Then 'NMEA 메세지 종료 Cut
-                If Not bufEachMessage.Count = 0 Then
-                    bufMessage.Enqueue(New GPSMessage(GPSMessage.MessageType.UNKNOWN, Nothing, bufEachMessage.ToArray))
-                    bufEachMessage.Clear()
-                End If
-            ElseIf nowbyte = &HD3 Then 'RTCM 메세지 시작 Cut
-                If Not bufEachMessage.Count = 0 Then
-                    bufMessage.Enqueue(New GPSMessage(GPSMessage.MessageType.UNKNOWN, Nothing, bufEachMessage.ToArray))
-                    bufEachMessage.Clear()
-                End If
-                bufEachMessage.Add(nowbyte)
-            ElseIf nowbyte = &HB5 Then 'UBX 메세지 시작 Cut
-                If Not bufEachMessage.Count = 0 Then
-                    bufMessage.Enqueue(New GPSMessage(GPSMessage.MessageType.UNKNOWN, Nothing, bufEachMessage.ToArray))
-                    bufEachMessage.Clear()
-                End If
-                bufEachMessage.Add(nowbyte)
-            ElseIf Not nowbyte = Encoding.ASCII.GetBytes(vbLf)(0) Then
-                bufEachMessage.Add(nowbyte)
+                result = New RTCMMessage(RTCMdata, bufEachMessage.ToArray, RTCMlen, RTCMcrc, Now)
+                bufEachMessage.Clear()
+                Exit Do
             End If
+
+            bufEachMessage.Add(nowbyte)
+            RTCMcount += 1
         Loop
-    End Sub
-
-    Private Function ProcessBytetoMessage(ele As GPSMessage) As GPSMessage
-        Try
-            If ele.Data.Count > 0 AndAlso ele.Data(0) = &HD3 Then
-                ele.Type = GPSMessage.MessageType.RTCM
-                ele.Message = ByteArrayToString(ele.Data)
-            ElseIf ele.Data.Count > 1 AndAlso (ele.Data(0) = &HB5 And ele.Data(1) = &H62) Then
-                ele.Type = GPSMessage.MessageType.UBX
-                ele.Message = ByteArrayToString(ele.Data)
-            ElseIf ele.Data.Count > 1 AndAlso Encoding.ASCII.GetString(ele.Data).Substring(0, 2) = "$G" Then
-                ele.Type = GPSMessage.MessageType.NMEA
-                ele.Message = Encoding.ASCII.GetString(ele.Data)
-            Else
-                ele.Type = GPSMessage.MessageType.UNKNOWN
-                ele.Message = ByteArrayToString(ele.Data)
-            End If
-        Catch ex As Exception
-            Project.EngineShowErr.DynamicInvoke("DECODE_MESSAGE_ERROR", "메서지를 해독하는데 실패했습니다! 메세지 내용 : " & ByteArrayToString(ele.Data) & " (길이 : " & ele.Data.Count & ")", "", "", ex)
-        End Try
-        Return ele
+        Return result
     End Function
-
 
     Private Sub ProcessMessage()
         Dim exmsg, exmsglen As String
         Do While True
             Try
-                ProcessByteBuffer()
-                If bufMessage.Count > 0 Then
-                    Dim nowmsg As GPSMessage = ProcessBytetoMessage(bufMessage.Dequeue())
-                    exmsg = nowmsg.Message
-                    exmsglen = nowmsg.Data.Count
-                    If nowmsg.Type = GPSMessage.MessageType.NMEA Then
-                        Dim pmsg As String() = Split(nowmsg.Message.Substring(1), ",")
-                        Dim detaildata As String = nowmsg.Message.Substring(nowmsg.Message.IndexOf(",") + 1)
-                        nowmsg.Message = detaildata
-                        If GPSData.ContainsKey(pmsg(0)) Then
-                            GPSData(pmsg(0)) = nowmsg
-                        Else
-                            GPSData.Add(pmsg(0), nowmsg)
-                        End If
-                    ElseIf nowmsg.Type = GPSMessage.MessageType.RTCM Then
-                        Dim packetid As Integer
-                        If nowmsg.Data.Count < 5 Then
-                            packetid = -1
-                        Else
-                            packetid = nowmsg.Data(3)
-                            packetid = packetid << 4
-                            packetid = packetid Or ((nowmsg.Data(4) >> 4) And &HF)
-                        End If
-
-                        If GPSData.ContainsKey(packetid.ToString) Then
-                            GPSData(packetid.ToString) = nowmsg
-                        Else
-                            GPSData.Add(packetid.ToString, nowmsg)
-                        End If
-                    Else
-                        'Dim unkid = "UNK" + UnknownMessageID.ToString
-                        Dim unkid = "UNK"
-                        If GPSData.ContainsKey(unkid) Then
-                            GPSData(unkid) = nowmsg
-                        Else
-                            GPSData.Add(unkid, nowmsg)
-                        End If
-                        UnknownMessageID += 1
-                    End If
-                    lstData.Items.Clear()
-                    txtKeywordCount.Text = "키워드 갯수 : " & GPSData.Count
-                    For Each nowele In GPSData
-                        Dim lst As New ListViewItem({nowele.Value.TypetoString(nowele.Value.Type), nowele.Key, nowele.Value.Message})
-                        lstData.Items.Add(lst)
-                    Next
+                Dim r = WaitRTCMMessage()
+                If latestData.ContainsKey(r.ID) Then
+                    latestData(r.ID) = r
+                Else
+                    latestData.Add(r.ID, r)
                 End If
+                lstRawSerialPrint(ByteArrayToString(r.FullMessage))
+                MessageCount += 1
+                txtKeywordCount.Text = "수신한 메세지 개수 : " & MessageCount & "   키워드 개수 : " & latestData.Count
             Catch ex As ThreadAbortException
             Catch ex As Exception
                 Project.EngineShowErr.DynamicInvoke("PROCESS_MESSAGE_ERROR", "메서지를 처리하는데 실패했습니다! 메세지 내용 : " & exmsg & " (길이 : " & exmsglen & ")", "", "", ex)
@@ -173,11 +125,12 @@ Public Class frmMain
             thSerial.Start()
             thMessage = New Thread(AddressOf ProcessMessage)
             thMessage.Start()
+            timLstUpdate.Enabled = True
 
             txtBaud.Enabled = False
             txtComPort.Enabled = False
             lstRawSerialPrint("[시리얼 포트 열기 성공]")
-            GPSData.Clear()
+            latestData.Clear()
         Catch ex As Exception
             lstRawSerialPrint("[시리얼 포트 열기 실패] → " & ex.GetType.FullName)
             Project.EngineShowErr.DynamicInvoke("COMPORT_OPEN_ERROR", "시리얼 포트를 여는데 실패했습니다!", "", "", ex)
@@ -192,13 +145,21 @@ Public Class frmMain
             Serial.Close()
         Catch
         End Try
-        bufMessage.Clear()
+        timLstUpdate.Enabled = False
         btnConnect.Enabled = True
         btnDisconnect.Enabled = False
         txtBaud.Enabled = True
         txtComPort.Enabled = True
         lstRawSerialPrint("[시리얼 포트 닫기 성공]")
     End Sub
+
+    Private Function RTCMIDtoExplain(id As String) As String
+        If RTCMexplain.ContainsKey(id) Then
+            Return RTCMexplain(id)
+        Else
+            Return ""
+        End If
+    End Function
 
     Public Shared Function ByteArrayToString(ByVal ba As Byte()) As String
         Dim hex As StringBuilder = New StringBuilder(ba.Length * 2)
@@ -209,37 +170,39 @@ Public Class frmMain
 
         Return hex.ToString.ToUpper()
     End Function
+
+    Private Sub timLstUpdate_Tick(sender As Object, e As EventArgs) Handles timLstUpdate.Tick
+        lstData.Items.Clear()
+        Dim displaylst As New Dictionary(Of String, RTCMMessage)(latestData)
+        For Each nowele In displaylst
+            Dim timediff As TimeSpan = Now - nowele.Value.IssueTime
+            Dim lst As New ListViewItem({nowele.Value.ID, Math.Round(timediff.TotalSeconds, 1) & "초 전", nowele.Value.Length, nowele.Value.FullMessage.Count, nowele.Value.CRC24.ToString("x6"), RTCMIDtoExplain(nowele.Value.ID)})
+            lstData.Items.Add(lst)
+        Next
+        lstData.Sort()
+    End Sub
 End Class
 
-Public Class GPSMessage
-    Public Type As MessageType
-    Public Message As String
-    Public Data As Byte()
+Public Class RTCMMessage
+    Public Data As List(Of Byte)
+    Public FullMessage As Byte()
+    Public Length As Long
+    Public CRC24 As Long
+    Public ID As Integer
+    Public IssueTime As Date
 
-    Public Sub New(t As MessageType, m As String, d As Byte())
-        Type = t
-        Message = m
-        Data = d
+    Public Sub New(data As List(Of Byte), fullmsg As Byte(), len As Long, crc As Long, time As Date)
+        data = data
+        FullMessage = fullmsg
+        Length = len
+        CRC24 = crc
+        ID = FullMessage(3)
+        ID = ID << 4
+        ID = ID Or ((FullMessage(4) >> 4) And &HF)
+        IssueTime = time
     End Sub
 
-    Public Enum MessageType
-        NMEA
-        UBX
-        RTCM
-        UNKNOWN
-    End Enum
 
-    Public Function TypetoString(t As MessageType) As String
-        If t = MessageType.NMEA Then
-            Return "NMEA"
-        ElseIf t = MessageType.RTCM Then
-            Return "RTCM"
-        ElseIf t = MessageType.UBX Then
-            Return "UBX"
-        ElseIf t = MessageType.UNKNOWN Then
-            Return "UNKNOWN"
-        End If
-    End Function
 End Class
 
 Public Class DBListView
@@ -250,4 +213,35 @@ Public Class DBListView
         SetStyle(ControlStyles.UserPaint, True)
         UpdateStyles()
     End Sub
+
+End Class
+
+Public Class ListViewComparer
+    Implements IComparer
+
+    Public col As Integer
+    Public order As SortOrder
+
+    Public Sub New()
+        col = 0
+        order = SortOrder.Ascending
+    End Sub
+
+    Public Sub New(ByVal column As Integer, ByVal order As SortOrder)
+        col = column
+        Me.order = order
+    End Sub
+
+    Public Function Compare(ByVal x As Object, ByVal y As Object) As Integer Implements IComparer.Compare
+        Dim returnVal As Integer = -1
+        Dim a = Convert.ToDouble((CType(x, ListViewItem)).SubItems(col).Text.Replace("초 전", ""))
+        Dim b = Convert.ToDouble((CType(y, ListViewItem)).SubItems(col).Text.Replace("초 전", ""))
+        If a > b Then
+            Return 1
+        ElseIf a = b Then
+            Return 0
+        Else
+            Return -1
+        End If
+    End Function
 End Class

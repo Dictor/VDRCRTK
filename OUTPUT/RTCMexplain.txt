@@ -1,0 +1,11 @@
+1005,Stationary RTK reference station ARP 
+1074,GPS MSM4 
+1077,GPS MSM7 
+1084,GLONASS MSM4 
+1087,GLONASS MSM7 
+1094,Galileo MSM4 
+1097,Galileo MSM7 
+1124,BeiDou MSM4 
+1127,BeiDou MSM7 
+1230,GLONASS code-phase biases 
+4072,Reference station PVT (u-blox proprietary RTCM Message)
