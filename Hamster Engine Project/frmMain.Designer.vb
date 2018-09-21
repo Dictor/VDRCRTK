@@ -24,7 +24,13 @@ Partial Class frmMain
     Private Sub InitializeComponent()
         Me.components = New System.ComponentModel.Container()
         Me.txtProgName = New System.Windows.Forms.Label()
-        Me.grpSerial = New System.Windows.Forms.GroupBox()
+        Me.grpComm = New System.Windows.Forms.GroupBox()
+        Me.btnMavSend = New System.Windows.Forms.Button()
+        Me.btnMavConnect = New System.Windows.Forms.Button()
+        Me.txtMavPort = New System.Windows.Forms.TextBox()
+        Me.Label4 = New System.Windows.Forms.Label()
+        Me.txtMavIP = New System.Windows.Forms.TextBox()
+        Me.Label3 = New System.Windows.Forms.Label()
         Me.btnDisconnect = New System.Windows.Forms.Button()
         Me.btnConnect = New System.Windows.Forms.Button()
         Me.Label2 = New System.Windows.Forms.Label()
@@ -33,7 +39,9 @@ Partial Class frmMain
         Me.Label1 = New System.Windows.Forms.Label()
         Me.lstRawSerial = New System.Windows.Forms.ListBox()
         Me.GroupBox1 = New System.Windows.Forms.GroupBox()
+        Me.btnListReset = New System.Windows.Forms.Button()
         Me.txtKeywordCount = New System.Windows.Forms.Label()
+        Me.timLstUpdate = New System.Windows.Forms.Timer(Me.components)
         Me.lstData = New Hamster_Engine_Project.DBListView()
         Me.colID = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.colIssueTime = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
@@ -41,8 +49,8 @@ Partial Class frmMain
         Me.colRealLength = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.colCRC = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.colExplain = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
-        Me.timLstUpdate = New System.Windows.Forms.Timer(Me.components)
-        Me.grpSerial.SuspendLayout()
+        Me.Label5 = New System.Windows.Forms.Label()
+        Me.grpComm.SuspendLayout()
         Me.GroupBox1.SuspendLayout()
         Me.SuspendLayout()
         '
@@ -56,46 +64,102 @@ Partial Class frmMain
         Me.txtProgName.Text = "Program Name"
         Me.txtProgName.TextAlign = System.Drawing.ContentAlignment.MiddleLeft
         '
-        'grpSerial
+        'grpComm
         '
-        Me.grpSerial.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
+        Me.grpComm.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.grpSerial.Controls.Add(Me.btnDisconnect)
-        Me.grpSerial.Controls.Add(Me.btnConnect)
-        Me.grpSerial.Controls.Add(Me.Label2)
-        Me.grpSerial.Controls.Add(Me.txtBaud)
-        Me.grpSerial.Controls.Add(Me.txtComPort)
-        Me.grpSerial.Controls.Add(Me.Label1)
-        Me.grpSerial.Controls.Add(Me.lstRawSerial)
-        Me.grpSerial.Location = New System.Drawing.Point(12, 43)
-        Me.grpSerial.Name = "grpSerial"
-        Me.grpSerial.Size = New System.Drawing.Size(826, 127)
-        Me.grpSerial.TabIndex = 2
-        Me.grpSerial.TabStop = False
-        Me.grpSerial.Text = "Serial"
+        Me.grpComm.Controls.Add(Me.btnMavSend)
+        Me.grpComm.Controls.Add(Me.btnMavConnect)
+        Me.grpComm.Controls.Add(Me.txtMavPort)
+        Me.grpComm.Controls.Add(Me.Label4)
+        Me.grpComm.Controls.Add(Me.txtMavIP)
+        Me.grpComm.Controls.Add(Me.Label3)
+        Me.grpComm.Controls.Add(Me.btnDisconnect)
+        Me.grpComm.Controls.Add(Me.btnConnect)
+        Me.grpComm.Controls.Add(Me.Label2)
+        Me.grpComm.Controls.Add(Me.txtBaud)
+        Me.grpComm.Controls.Add(Me.txtComPort)
+        Me.grpComm.Controls.Add(Me.Label1)
+        Me.grpComm.Controls.Add(Me.lstRawSerial)
+        Me.grpComm.Location = New System.Drawing.Point(12, 43)
+        Me.grpComm.Name = "grpComm"
+        Me.grpComm.Size = New System.Drawing.Size(826, 127)
+        Me.grpComm.TabIndex = 2
+        Me.grpComm.TabStop = False
+        Me.grpComm.Text = "Communication"
+        '
+        'btnMavSend
+        '
+        Me.btnMavSend.Location = New System.Drawing.Point(278, 91)
+        Me.btnMavSend.Name = "btnMavSend"
+        Me.btnMavSend.Size = New System.Drawing.Size(51, 27)
+        Me.btnMavSend.TabIndex = 15
+        Me.btnMavSend.Text = "전송"
+        Me.btnMavSend.UseVisualStyleBackColor = True
+        '
+        'btnMavConnect
+        '
+        Me.btnMavConnect.Location = New System.Drawing.Point(217, 91)
+        Me.btnMavConnect.Name = "btnMavConnect"
+        Me.btnMavConnect.Size = New System.Drawing.Size(51, 27)
+        Me.btnMavConnect.TabIndex = 14
+        Me.btnMavConnect.Text = "연결"
+        Me.btnMavConnect.UseVisualStyleBackColor = True
+        '
+        'txtMavPort
+        '
+        Me.txtMavPort.Location = New System.Drawing.Point(217, 55)
+        Me.txtMavPort.Name = "txtMavPort"
+        Me.txtMavPort.Size = New System.Drawing.Size(112, 25)
+        Me.txtMavPort.TabIndex = 13
+        '
+        'Label4
+        '
+        Me.Label4.Location = New System.Drawing.Point(148, 55)
+        Me.Label4.Name = "Label4"
+        Me.Label4.Size = New System.Drawing.Size(67, 25)
+        Me.Label4.TabIndex = 12
+        Me.Label4.Text = "MAV Port"
+        Me.Label4.TextAlign = System.Drawing.ContentAlignment.MiddleRight
+        '
+        'txtMavIP
+        '
+        Me.txtMavIP.Location = New System.Drawing.Point(217, 21)
+        Me.txtMavIP.Name = "txtMavIP"
+        Me.txtMavIP.Size = New System.Drawing.Size(112, 25)
+        Me.txtMavIP.TabIndex = 11
+        '
+        'Label3
+        '
+        Me.Label3.Location = New System.Drawing.Point(149, 21)
+        Me.Label3.Name = "Label3"
+        Me.Label3.Size = New System.Drawing.Size(62, 25)
+        Me.Label3.TabIndex = 10
+        Me.Label3.Text = "MAV IP"
+        Me.Label3.TextAlign = System.Drawing.ContentAlignment.MiddleRight
         '
         'btnDisconnect
         '
         Me.btnDisconnect.Enabled = False
-        Me.btnDisconnect.Location = New System.Drawing.Point(172, 71)
+        Me.btnDisconnect.Location = New System.Drawing.Point(66, 91)
         Me.btnDisconnect.Name = "btnDisconnect"
-        Me.btnDisconnect.Size = New System.Drawing.Size(62, 50)
+        Me.btnDisconnect.Size = New System.Drawing.Size(78, 27)
         Me.btnDisconnect.TabIndex = 9
-        Me.btnDisconnect.Text = "연결" & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "끊기"
+        Me.btnDisconnect.Text = "연결 끊기"
         Me.btnDisconnect.UseVisualStyleBackColor = True
         '
         'btnConnect
         '
-        Me.btnConnect.Location = New System.Drawing.Point(172, 15)
+        Me.btnConnect.Location = New System.Drawing.Point(9, 91)
         Me.btnConnect.Name = "btnConnect"
-        Me.btnConnect.Size = New System.Drawing.Size(62, 50)
+        Me.btnConnect.Size = New System.Drawing.Size(51, 27)
         Me.btnConnect.TabIndex = 3
         Me.btnConnect.Text = "연결"
         Me.btnConnect.UseVisualStyleBackColor = True
         '
         'Label2
         '
-        Me.Label2.Location = New System.Drawing.Point(6, 75)
+        Me.Label2.Location = New System.Drawing.Point(6, 55)
         Me.Label2.Name = "Label2"
         Me.Label2.Size = New System.Drawing.Size(62, 25)
         Me.Label2.TabIndex = 6
@@ -104,23 +168,23 @@ Partial Class frmMain
         '
         'txtBaud
         '
-        Me.txtBaud.Location = New System.Drawing.Point(74, 75)
+        Me.txtBaud.Location = New System.Drawing.Point(74, 55)
         Me.txtBaud.Name = "txtBaud"
-        Me.txtBaud.Size = New System.Drawing.Size(92, 25)
+        Me.txtBaud.Size = New System.Drawing.Size(70, 25)
         Me.txtBaud.TabIndex = 5
         Me.txtBaud.Text = "115200"
         '
         'txtComPort
         '
-        Me.txtComPort.Location = New System.Drawing.Point(74, 36)
+        Me.txtComPort.Location = New System.Drawing.Point(74, 21)
         Me.txtComPort.Name = "txtComPort"
-        Me.txtComPort.Size = New System.Drawing.Size(92, 25)
+        Me.txtComPort.Size = New System.Drawing.Size(70, 25)
         Me.txtComPort.TabIndex = 3
         Me.txtComPort.Text = "COM"
         '
         'Label1
         '
-        Me.Label1.Location = New System.Drawing.Point(6, 36)
+        Me.Label1.Location = New System.Drawing.Point(6, 21)
         Me.Label1.Name = "Label1"
         Me.Label1.Size = New System.Drawing.Size(62, 25)
         Me.Label1.TabIndex = 2
@@ -134,10 +198,10 @@ Partial Class frmMain
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.lstRawSerial.Font = New System.Drawing.Font("맑은 고딕", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(129, Byte))
         Me.lstRawSerial.FormattingEnabled = True
-        Me.lstRawSerial.Location = New System.Drawing.Point(239, 14)
+        Me.lstRawSerial.Location = New System.Drawing.Point(334, 21)
         Me.lstRawSerial.Margin = New System.Windows.Forms.Padding(2)
         Me.lstRawSerial.Name = "lstRawSerial"
-        Me.lstRawSerial.Size = New System.Drawing.Size(582, 108)
+        Me.lstRawSerial.Size = New System.Drawing.Size(487, 69)
         Me.lstRawSerial.TabIndex = 1
         '
         'GroupBox1
@@ -145,6 +209,7 @@ Partial Class frmMain
         Me.GroupBox1.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
             Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.GroupBox1.Controls.Add(Me.btnListReset)
         Me.GroupBox1.Controls.Add(Me.txtKeywordCount)
         Me.GroupBox1.Controls.Add(Me.lstData)
         Me.GroupBox1.Location = New System.Drawing.Point(12, 176)
@@ -154,6 +219,16 @@ Partial Class frmMain
         Me.GroupBox1.TabStop = False
         Me.GroupBox1.Text = "Data"
         '
+        'btnListReset
+        '
+        Me.btnListReset.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.btnListReset.Location = New System.Drawing.Point(709, 11)
+        Me.btnListReset.Name = "btnListReset"
+        Me.btnListReset.Size = New System.Drawing.Size(112, 25)
+        Me.btnListReset.TabIndex = 16
+        Me.btnListReset.Text = "리스트 초기화"
+        Me.btnListReset.UseVisualStyleBackColor = True
+        '
         'txtKeywordCount
         '
         Me.txtKeywordCount.Location = New System.Drawing.Point(6, 19)
@@ -161,6 +236,10 @@ Partial Class frmMain
         Me.txtKeywordCount.Size = New System.Drawing.Size(465, 17)
         Me.txtKeywordCount.TabIndex = 1
         Me.txtKeywordCount.Text = "키워드 갯수 : "
+        '
+        'timLstUpdate
+        '
+        Me.timLstUpdate.Interval = 500
         '
         'lstData
         '
@@ -204,9 +283,15 @@ Partial Class frmMain
         Me.colExplain.Text = "메세지 설명"
         Me.colExplain.Width = 450
         '
-        'timLstUpdate
+        'Label5
         '
-        Me.timLstUpdate.Interval = 500
+        Me.Label5.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.Label5.Font = New System.Drawing.Font("맑은 고딕", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(129, Byte))
+        Me.Label5.Location = New System.Drawing.Point(643, 9)
+        Me.Label5.Name = "Label5"
+        Me.Label5.Size = New System.Drawing.Size(191, 18)
+        Me.Label5.TabIndex = 11
+        Me.Label5.Text = "제작 김정현 (kimdictor@gmail.com)"
         '
         'frmMain
         '
@@ -214,22 +299,23 @@ Partial Class frmMain
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.AutoSize = True
         Me.ClientSize = New System.Drawing.Size(850, 565)
+        Me.Controls.Add(Me.Label5)
         Me.Controls.Add(Me.GroupBox1)
-        Me.Controls.Add(Me.grpSerial)
+        Me.Controls.Add(Me.grpComm)
         Me.Controls.Add(Me.txtProgName)
         Me.Font = New System.Drawing.Font("맑은 고딕", 9.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(129, Byte))
         Me.Margin = New System.Windows.Forms.Padding(3, 5, 3, 5)
         Me.Name = "frmMain"
         Me.Text = "VDRC NEOM8P Test Program"
-        Me.grpSerial.ResumeLayout(False)
-        Me.grpSerial.PerformLayout()
+        Me.grpComm.ResumeLayout(False)
+        Me.grpComm.PerformLayout()
         Me.GroupBox1.ResumeLayout(False)
         Me.ResumeLayout(False)
 
     End Sub
 
     Friend WithEvents txtProgName As System.Windows.Forms.Label
-    Friend WithEvents grpSerial As System.Windows.Forms.GroupBox
+    Friend WithEvents grpComm As System.Windows.Forms.GroupBox
     Friend WithEvents btnDisconnect As System.Windows.Forms.Button
     Friend WithEvents btnConnect As System.Windows.Forms.Button
     Friend WithEvents Label2 As System.Windows.Forms.Label
@@ -247,4 +333,12 @@ Partial Class frmMain
     Friend WithEvents timLstUpdate As System.Windows.Forms.Timer
     Friend WithEvents colIssueTime As System.Windows.Forms.ColumnHeader
     Friend WithEvents lstData As DBListView
+    Friend WithEvents txtMavPort As System.Windows.Forms.TextBox
+    Friend WithEvents Label4 As System.Windows.Forms.Label
+    Friend WithEvents txtMavIP As System.Windows.Forms.TextBox
+    Friend WithEvents Label3 As System.Windows.Forms.Label
+    Friend WithEvents btnMavConnect As System.Windows.Forms.Button
+    Friend WithEvents btnMavSend As System.Windows.Forms.Button
+    Friend WithEvents btnListReset As System.Windows.Forms.Button
+    Friend WithEvents Label5 As System.Windows.Forms.Label
 End Class

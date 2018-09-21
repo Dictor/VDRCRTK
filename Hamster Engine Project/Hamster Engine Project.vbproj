@@ -46,8 +46,8 @@
     <Reference Include="mavlink">
       <HintPath>..\OUTPUT\library\mavlink.dll</HintPath>
     </Reference>
-    <Reference Include="PInvokeSerialPort">
-      <HintPath>..\OUTPUT\library\PInvokeSerialPort.dll</HintPath>
+    <Reference Include="mavlinkgen">
+      <HintPath>..\OUTPUT\library\mavlinkgen.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />

@@ -1,8 +1,10 @@
 ﻿Imports System.IO
 Imports System.IO.Ports
+Imports System.Net
 Imports System.Text
 Imports System.Threading
 Imports System.Windows.Forms
+Imports MavLinkNet
 
 Public Class frmMain
     Private Serial As New SerialPort
@@ -15,6 +17,8 @@ Public Class frmMain
 
     Private RTCMexplain As New Dictionary(Of String, String)
     Private MessageCount As Long = 0
+
+    Private mavudp As MavLinkNet.MavLinkUdpTransport
 
     Private Sub txtProgName_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         txtProgName.Text = Project.Version.GetName & " " & Project.Version.GetVersion(True)
@@ -75,7 +79,7 @@ Public Class frmMain
                 Else
                     latestData.Add(r.ID, r)
                 End If
-                lstRawSerialPrint(ByteArrayToString(r.FullMessage))
+                'lstRawSerialPrint(ByteArrayToString(r.FullMessage))
                 MessageCount += 1
                 txtKeywordCount.Text = "수신한 메세지 개수 : " & MessageCount & "   키워드 개수 : " & latestData.Count
             Catch ex As ThreadAbortException
@@ -181,6 +185,51 @@ Public Class frmMain
         Next
         lstData.Sort()
     End Sub
+
+    Private Sub btnMavConnect_Click(sender As Object, e As EventArgs) Handles btnMavConnect.Click 'https://mavlink.io/kr/messages/common.html#GPS_RTCM_DATA
+        Try
+            mavudp = New MavLinkUdpTransport
+            Dim udpip As IPAddress
+            IPAddress.TryParse(txtMavIP.Text, udpip)
+            lstRawSerialPrint("[MavLink 연결 시도] → " & udpip.ToString & ":" & txtMavPort.Text)
+            mavudp.TargetIpAddress = udpip
+            mavudp.UdpTargetPort = txtMavPort.Text
+            mavudp.UdpListeningPort = 19000
+            AddHandler mavudp.OnPacketReceived, AddressOf MavPacketRecv
+            mavudp.Initialize()
+            lstRawSerialPrint("[MavLink 연결 성공]")
+        Catch ex As Exception
+            lstRawSerialPrint("[MavLink 연결 실패] → " & ex.GetType.FullName)
+            Project.EngineShowErr.DynamicInvoke("MAVLINK_OPEN_ERROR", "MAVLINK 연결을 여는데 실패했습니다!", "", "", ex)
+        End Try
+    End Sub
+
+    Private Sub MavPacketRecv(sender As Object, packet As MavLinkPacket)
+        lstRawSerialPrint("[MavLink 수신 이벤트] → 메세지 ID : " & packet.MessageId)
+    End Sub
+
+    Private Sub txtMavSend_Click(sender As Object, e As EventArgs) Handles btnMavSend.Click
+        Try
+            Dim msgid = Interaction.InputBox("보낼 메세지의 ID를 입력하세요", "MAVLINK 메세지 전송")
+            Dim msg = New UasGpsRtcmData
+            msg.Data = latestData(msgid).FullMessage.ToArray
+            msg.Len = latestData(msgid).Length
+            msg.Flags = &H0
+            mavudp.SendMessage(msg)
+            lstRawSerialPrint("[MavLink 전송 요청 성공]")
+        Catch ex As Exception
+            lstRawSerialPrint("[MavLink 전송 실패] → " & ex.GetType.FullName)
+            Project.EngineShowErr.DynamicInvoke("MAVLINK_SEND_ERROR", "MAVLINK 메세지를 전송하는데 실패했습니다!", "", "", ex)
+        End Try
+    End Sub
+
+    Private Sub Button1_Click(sender As Object, e As EventArgs) Handles btnListReset.Click
+        latestData.Clear()
+    End Sub
+
+    Private Sub Label5_Click(sender As Object, e As EventArgs) Handles Label5.Click
+
+    End Sub
 End Class
 
 Public Class RTCMMessage
@@ -201,8 +250,6 @@ Public Class RTCMMessage
         ID = ID Or ((FullMessage(4) >> 4) And &HF)
         IssueTime = time
     End Sub
-
-
 End Class
 
 Public Class DBListView
