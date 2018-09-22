@@ -180,8 +180,16 @@ Public Class frmMain
         Dim displaylst As New Dictionary(Of String, RTCMMessage)(latestData)
         For Each nowele In displaylst
             Dim timediff As TimeSpan = Now - nowele.Value.IssueTime
-            Dim lst As New ListViewItem({nowele.Value.ID, Math.Round(timediff.TotalSeconds, 1) & "초 전", nowele.Value.Length, nowele.Value.FullMessage.Count, nowele.Value.CRC24.ToString("x6"), RTCMIDtoExplain(nowele.Value.ID)})
-            lstData.Items.Add(lst)
+            Dim lst As ListViewItem
+            If chkShowDefID.Checked Then
+                If RTCMexplain.ContainsKey(nowele.Value.ID) Then
+                    lst = New ListViewItem({nowele.Value.ID, Math.Round(timediff.TotalSeconds, 1) & "초 전", nowele.Value.Length, nowele.Value.FullMessage.Count, nowele.Value.CRC24.ToString("x6"), RTCMIDtoExplain(nowele.Value.ID)})
+                    lstData.Items.Add(lst)
+                End If
+            Else
+                    lst = New ListViewItem({nowele.Value.ID, Math.Round(timediff.TotalSeconds, 1) & "초 전", nowele.Value.Length, nowele.Value.FullMessage.Count, nowele.Value.CRC24.ToString("x6"), RTCMIDtoExplain(nowele.Value.ID)})
+                lstData.Items.Add(lst)
+            End If
         Next
         lstData.Sort()
     End Sub

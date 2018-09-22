@@ -41,7 +41,6 @@ Partial Class frmMain
         Me.GroupBox1 = New System.Windows.Forms.GroupBox()
         Me.btnListReset = New System.Windows.Forms.Button()
         Me.txtKeywordCount = New System.Windows.Forms.Label()
-        Me.timLstUpdate = New System.Windows.Forms.Timer(Me.components)
         Me.lstData = New Hamster_Engine_Project.DBListView()
         Me.colID = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.colIssueTime = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
@@ -49,7 +48,9 @@ Partial Class frmMain
         Me.colRealLength = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.colCRC = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.colExplain = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
+        Me.timLstUpdate = New System.Windows.Forms.Timer(Me.components)
         Me.Label5 = New System.Windows.Forms.Label()
+        Me.chkShowDefID = New System.Windows.Forms.CheckBox()
         Me.grpComm.SuspendLayout()
         Me.GroupBox1.SuspendLayout()
         Me.SuspendLayout()
@@ -209,6 +210,7 @@ Partial Class frmMain
         Me.GroupBox1.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
             Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.GroupBox1.Controls.Add(Me.chkShowDefID)
         Me.GroupBox1.Controls.Add(Me.btnListReset)
         Me.GroupBox1.Controls.Add(Me.txtKeywordCount)
         Me.GroupBox1.Controls.Add(Me.lstData)
@@ -236,10 +238,6 @@ Partial Class frmMain
         Me.txtKeywordCount.Size = New System.Drawing.Size(465, 17)
         Me.txtKeywordCount.TabIndex = 1
         Me.txtKeywordCount.Text = "키워드 갯수 : "
-        '
-        'timLstUpdate
-        '
-        Me.timLstUpdate.Interval = 500
         '
         'lstData
         '
@@ -283,6 +281,10 @@ Partial Class frmMain
         Me.colExplain.Text = "메세지 설명"
         Me.colExplain.Width = 450
         '
+        'timLstUpdate
+        '
+        Me.timLstUpdate.Interval = 500
+        '
         'Label5
         '
         Me.Label5.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
@@ -292,6 +294,16 @@ Partial Class frmMain
         Me.Label5.Size = New System.Drawing.Size(191, 18)
         Me.Label5.TabIndex = 11
         Me.Label5.Text = "제작 김정현 (kimdictor@gmail.com)"
+        '
+        'chkShowDefID
+        '
+        Me.chkShowDefID.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.chkShowDefID.Location = New System.Drawing.Point(563, 11)
+        Me.chkShowDefID.Name = "chkShowDefID"
+        Me.chkShowDefID.Size = New System.Drawing.Size(131, 25)
+        Me.chkShowDefID.TabIndex = 17
+        Me.chkShowDefID.Text = "정의된 ID만 표시"
+        Me.chkShowDefID.UseVisualStyleBackColor = True
         '
         'frmMain
         '
@@ -341,4 +353,5 @@ Partial Class frmMain
     Friend WithEvents btnMavSend As System.Windows.Forms.Button
     Friend WithEvents btnListReset As System.Windows.Forms.Button
     Friend WithEvents Label5 As System.Windows.Forms.Label
+    Friend WithEvents chkShowDefID As System.Windows.Forms.CheckBox
 End Class
