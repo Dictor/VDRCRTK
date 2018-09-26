@@ -22,7 +22,7 @@ Public Class Mavlink2
 
         ''' <summary>
         ''' 새로운 Mavlink Message를 초기화합니다, 이 메서드는 메세지의 Length와 Checksum을 자동으로 계산하므로 안전합니다.
-        ''' 메세지 직렬화 구현은 https://github.com/mavlink/c_library_v2/blob/master/mavlink_helpers.h 을 참고하세요.
+        ''' mavlink/c_library_v2/blob/master/mavlink_helpers.h의 mavlink_finalize_message_buffer
         ''' </summary>
         Public Sub New(marker As Byte, seq As Byte, sysid As Byte, compid As Byte, msgid As UInt32, tsysid As Byte, tcompid As Byte, payloaddata As Byte(), crcextra As Byte)
             MagicMarker = marker
@@ -64,6 +64,10 @@ Public Class Mavlink2
             Return data.ToArray
         End Function
 
+        ''' <summary>
+        ''' 디버그를 위해 메세지의 내용을 문자열로 모두 출력합니다 
+        ''' </summary>
+        ''' <returns></returns>
         Public Overrides Function ToString() As String
             If Not isInited Then
                 Return "메세지가 초기화 되지 않음"
@@ -77,7 +81,7 @@ Public Class Mavlink2
             Next
             ResultString += "Payload = "
             For addr = 10 To ResultData.Count - 3
-                ResultString += ResultData(addr).ToString("x2")
+                ResultString += ResultData(addr).ToString("x2") & " "
             Next
             ResultString += "CheckSum first = " & ResultData(ResultData.Count - 2).ToString("x2") & " CheckSum last = " & ResultData(ResultData.Count - 1).ToString("x2")
             Return "[메세지 정보]" & vbCrLf & ResultString & vbCrLf & "[메세지 끝]"
