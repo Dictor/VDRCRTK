@@ -39,6 +39,7 @@ Partial Class frmMain
         Me.Label1 = New System.Windows.Forms.Label()
         Me.lstRawSerial = New System.Windows.Forms.ListBox()
         Me.GroupBox1 = New System.Windows.Forms.GroupBox()
+        Me.chkShowDefID = New System.Windows.Forms.CheckBox()
         Me.btnListReset = New System.Windows.Forms.Button()
         Me.txtKeywordCount = New System.Windows.Forms.Label()
         Me.lstData = New Hamster_Engine_Project.DBListView()
@@ -50,7 +51,7 @@ Partial Class frmMain
         Me.colExplain = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.timLstUpdate = New System.Windows.Forms.Timer(Me.components)
         Me.Label5 = New System.Windows.Forms.Label()
-        Me.chkShowDefID = New System.Windows.Forms.CheckBox()
+        Me.btnMavDIsconnect = New System.Windows.Forms.Button()
         Me.grpComm.SuspendLayout()
         Me.GroupBox1.SuspendLayout()
         Me.SuspendLayout()
@@ -69,6 +70,7 @@ Partial Class frmMain
         '
         Me.grpComm.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.grpComm.Controls.Add(Me.btnMavDIsconnect)
         Me.grpComm.Controls.Add(Me.btnMavSend)
         Me.grpComm.Controls.Add(Me.btnMavConnect)
         Me.grpComm.Controls.Add(Me.txtMavPort)
@@ -100,7 +102,7 @@ Partial Class frmMain
         '
         'btnMavConnect
         '
-        Me.btnMavConnect.Location = New System.Drawing.Point(217, 91)
+        Me.btnMavConnect.Location = New System.Drawing.Point(151, 91)
         Me.btnMavConnect.Name = "btnMavConnect"
         Me.btnMavConnect.Size = New System.Drawing.Size(51, 27)
         Me.btnMavConnect.TabIndex = 14
@@ -221,6 +223,16 @@ Partial Class frmMain
         Me.GroupBox1.TabStop = False
         Me.GroupBox1.Text = "Data"
         '
+        'chkShowDefID
+        '
+        Me.chkShowDefID.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.chkShowDefID.Location = New System.Drawing.Point(563, 11)
+        Me.chkShowDefID.Name = "chkShowDefID"
+        Me.chkShowDefID.Size = New System.Drawing.Size(131, 25)
+        Me.chkShowDefID.TabIndex = 17
+        Me.chkShowDefID.Text = "정의된 ID만 표시"
+        Me.chkShowDefID.UseVisualStyleBackColor = True
+        '
         'btnListReset
         '
         Me.btnListReset.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
@@ -295,15 +307,15 @@ Partial Class frmMain
         Me.Label5.TabIndex = 11
         Me.Label5.Text = "제작 김정현 (kimdictor@gmail.com)"
         '
-        'chkShowDefID
+        'btnMavDIsconnect
         '
-        Me.chkShowDefID.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.chkShowDefID.Location = New System.Drawing.Point(563, 11)
-        Me.chkShowDefID.Name = "chkShowDefID"
-        Me.chkShowDefID.Size = New System.Drawing.Size(131, 25)
-        Me.chkShowDefID.TabIndex = 17
-        Me.chkShowDefID.Text = "정의된 ID만 표시"
-        Me.chkShowDefID.UseVisualStyleBackColor = True
+        Me.btnMavDIsconnect.Font = New System.Drawing.Font("맑은 고딕", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(129, Byte))
+        Me.btnMavDIsconnect.Location = New System.Drawing.Point(208, 91)
+        Me.btnMavDIsconnect.Name = "btnMavDIsconnect"
+        Me.btnMavDIsconnect.Size = New System.Drawing.Size(64, 27)
+        Me.btnMavDIsconnect.TabIndex = 16
+        Me.btnMavDIsconnect.Text = "연결 끊기"
+        Me.btnMavDIsconnect.UseVisualStyleBackColor = True
         '
         'frmMain
         '
@@ -354,4 +366,5 @@ Partial Class frmMain
     Friend WithEvents btnListReset As System.Windows.Forms.Button
     Friend WithEvents Label5 As System.Windows.Forms.Label
     Friend WithEvents chkShowDefID As System.Windows.Forms.CheckBox
+    Friend WithEvents btnMavDIsconnect As System.Windows.Forms.Button
 End Class

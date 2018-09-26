@@ -19,6 +19,8 @@ Public Class frmMain
     Private MessageCount As Long = 0
 
     Private mavudp As MavLinkNet.MavLinkUdpTransport
+    Private isMavReady As Boolean = False
+    Private mavMessageFlag As Byte
 
     Private Sub txtProgName_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         txtProgName.Text = Project.Version.GetName & " " & Project.Version.GetVersion(True)
@@ -79,7 +81,13 @@ Public Class frmMain
                 Else
                     latestData.Add(r.ID, r)
                 End If
+                If RTCMexplain.ContainsKey(r.ID) Then
+                    If isMavReady Then
+                        MavSendRTCM(r)
+                    End If
+                End If
                 'lstRawSerialPrint(ByteArrayToString(r.FullMessage))
+                Project.LogWrite.DynamicInvoke("수신한 메세지 HEX : " & ByteArrayToString(r.FullMessage))
                 MessageCount += 1
                 txtKeywordCount.Text = "수신한 메세지 개수 : " & MessageCount & "   키워드 개수 : " & latestData.Count
             Catch ex As ThreadAbortException
@@ -111,6 +119,7 @@ Public Class frmMain
     Private Sub lstRawSerialPrint(msg As String)
         lstRawSerial.Items.Add(msg)
         lstRawSerial.SelectedIndex = lstRawSerial.Items.Count - 1
+        Project.LogWrite.DynamicInvoke(msg)
     End Sub
 
     Private Sub btnConnect_Click(sender As Object, e As EventArgs) Handles btnConnect.Click
@@ -176,22 +185,26 @@ Public Class frmMain
     End Function
 
     Private Sub timLstUpdate_Tick(sender As Object, e As EventArgs) Handles timLstUpdate.Tick
-        lstData.Items.Clear()
-        Dim displaylst As New Dictionary(Of String, RTCMMessage)(latestData)
-        For Each nowele In displaylst
-            Dim timediff As TimeSpan = Now - nowele.Value.IssueTime
-            Dim lst As ListViewItem
-            If chkShowDefID.Checked Then
-                If RTCMexplain.ContainsKey(nowele.Value.ID) Then
+        Try
+            lstData.Items.Clear()
+            Dim displaylst As New Dictionary(Of String, RTCMMessage)(latestData)
+            For Each nowele In displaylst
+                Dim timediff As TimeSpan = Now - nowele.Value.IssueTime
+                Dim lst As ListViewItem
+                If chkShowDefID.Checked Then
+                    If RTCMexplain.ContainsKey(nowele.Value.ID) Then
+                        lst = New ListViewItem({nowele.Value.ID, Math.Round(timediff.TotalSeconds, 1) & "초 전", nowele.Value.Length, nowele.Value.FullMessage.Count, nowele.Value.CRC24.ToString("x6"), RTCMIDtoExplain(nowele.Value.ID)})
+                        lstData.Items.Add(lst)
+                    End If
+                Else
                     lst = New ListViewItem({nowele.Value.ID, Math.Round(timediff.TotalSeconds, 1) & "초 전", nowele.Value.Length, nowele.Value.FullMessage.Count, nowele.Value.CRC24.ToString("x6"), RTCMIDtoExplain(nowele.Value.ID)})
                     lstData.Items.Add(lst)
                 End If
-            Else
-                    lst = New ListViewItem({nowele.Value.ID, Math.Round(timediff.TotalSeconds, 1) & "초 전", nowele.Value.Length, nowele.Value.FullMessage.Count, nowele.Value.CRC24.ToString("x6"), RTCMIDtoExplain(nowele.Value.ID)})
-                lstData.Items.Add(lst)
-            End If
-        Next
-        lstData.Sort()
+            Next
+            lstData.Sort()
+        Catch ex As Exception
+            Project.EngineShowErr.DynamicInvoke("MESSAGE_DISPLAY_ERROR", "메세지를 표출하는 중 오류가 발생했습니다", "", "", ex)
+        End Try
     End Sub
 
     Private Sub btnMavConnect_Click(sender As Object, e As EventArgs) Handles btnMavConnect.Click 'https://mavlink.io/kr/messages/common.html#GPS_RTCM_DATA
@@ -206,37 +219,81 @@ Public Class frmMain
             AddHandler mavudp.OnPacketReceived, AddressOf MavPacketRecv
             mavudp.Initialize()
             lstRawSerialPrint("[MavLink 연결 성공]")
+            isMavReady = True
         Catch ex As Exception
             lstRawSerialPrint("[MavLink 연결 실패] → " & ex.GetType.FullName)
             Project.EngineShowErr.DynamicInvoke("MAVLINK_OPEN_ERROR", "MAVLINK 연결을 여는데 실패했습니다!", "", "", ex)
+            isMavReady = False
         End Try
     End Sub
 
     Private Sub MavPacketRecv(sender As Object, packet As MavLinkPacket)
-        lstRawSerialPrint("[MavLink 수신 이벤트] → 메세지 ID : " & packet.MessageId)
+        Try
+            lstRawSerialPrint("[MavLink 수신 이벤트] → 메세지 ID : " & packet.MessageId.ToString)
+        Catch ex As Exception
+            lstRawSerialPrint("[MavLink 수신 실패] → " & ex.GetType.FullName)
+            Project.EngineShowErr.DynamicInvoke("MAVLINK_RECEIVE_ERROR", "MAVLINK 메세지를 수신하는데 실패했습니다!", "", "", ex)
+        End Try
     End Sub
 
     Private Sub txtMavSend_Click(sender As Object, e As EventArgs) Handles btnMavSend.Click
+        If Not isMavReady Then
+            Exit Sub
+        End If
+        Dim msgid = InputBox("보낼 메세지의 ID를 입력하세요", "MAVLINK 메세지 전송")
+        MavSendRTCM(latestData(msgid))
+    End Sub
+
+    Private Sub MavSendRTCM(r As RTCMMessage)
         Try
-            Dim msgid = Interaction.InputBox("보낼 메세지의 ID를 입력하세요", "MAVLINK 메세지 전송")
+            lstRawSerialPrint("[MavLink 전송 요청] → ID : " & r.ID & " FLAG : " & mavMessageFlag.ToString("x2"))
             Dim msg = New UasGpsRtcmData
-            msg.Data = latestData(msgid).FullMessage.ToArray
-            msg.Len = latestData(msgid).Length
-            msg.Flags = &H0
+            Dim data = MakeRTCMDataFrame(r.FullMessage)
+            If data Is Nothing Then
+                lstRawSerialPrint("[MavLink 메세지 생성 오류, 생략합니다] → ID : " & r.ID)
+                Exit Sub
+            End If
+            msg.Data = data
+            msg.Len = r.Length
+            msg.Flags = mavMessageFlag
+            NextFlag()
             mavudp.SendMessage(msg)
-            lstRawSerialPrint("[MavLink 전송 요청 성공]")
         Catch ex As Exception
             lstRawSerialPrint("[MavLink 전송 실패] → " & ex.GetType.FullName)
             Project.EngineShowErr.DynamicInvoke("MAVLINK_SEND_ERROR", "MAVLINK 메세지를 전송하는데 실패했습니다!", "", "", ex)
         End Try
     End Sub
 
+    Private Sub NextFlag()
+        If mavMessageFlag = &HF8 Then
+            mavMessageFlag = 0
+        Else
+            mavMessageFlag += 8
+        End If
+    End Sub
+
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles btnListReset.Click
         latestData.Clear()
     End Sub
 
-    Private Sub Label5_Click(sender As Object, e As EventArgs) Handles Label5.Click
+    Private Function MakeRTCMDataFrame(l As Byte())
+        Dim b(179) As Byte
+        If l.Count > 180 Then
+            Return Nothing
+        End If
+        For i = 0 To l.Count - 1
+            b(i) = l(i)
+        Next
+        For i = l.Count To b.Count - 1
+            b(i) = 0
+        Next
+        Return b
+    End Function
 
+    Private Sub Button1_Click_1(sender As Object, e As EventArgs) Handles btnMavDIsconnect.Click
+        isMavReady = False
+        mavudp.Dispose()
+        lstRawSerialPrint("[MavLink 닫기 성공]")
     End Sub
 End Class
 
@@ -268,7 +325,6 @@ Public Class DBListView
         SetStyle(ControlStyles.UserPaint, True)
         UpdateStyles()
     End Sub
-
 End Class
 
 Public Class ListViewComparer

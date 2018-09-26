@@ -2,7 +2,7 @@
 Imports Hamster_Engine_Project.HE_Common_Component
 
 Public Class Project
-    Public Shared Version As New HamsterVersion("VDRC RTK Process Program", 1, 0, 180922, 15)
+    Public Shared Version As New HamsterVersion("VDRC RTK Process Program", 1, 0, 180923, 18)
 
     '("개체 식별자 문자열", {"어셈블리 경로"})
     Private Shared LoadObject_PROJ_Info As New Dictionary(Of String, Object())
@@ -11,6 +11,7 @@ Public Class Project
 
     Public Shared EngineShowErr As [Delegate]
     Public Shared EngineShowWarn As [Delegate]
+    Public Shared LogWrite As [Delegate]
 
     Public Function initialization(EngineAsm As Dictionary(Of String, Object), enginefunc As [Delegate]()(), args As Object()) As Dictionary(Of String, Object())
         ApplicationStartupPath = args(0)
@@ -18,6 +19,7 @@ Public Class Project
         setMainFrm = enginefunc(2)(0)
         EngineShowWarn = enginefunc(3)(0)
         EngineShowErr = enginefunc(4)(0)
+        LogWrite = enginefunc(1)(0)
         setMainFrm.DynamicInvoke(MainForm)
         Return LoadObject_PROJ_Info
     End Function
