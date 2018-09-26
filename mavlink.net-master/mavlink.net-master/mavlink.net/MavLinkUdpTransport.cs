@@ -27,7 +27,6 @@ using System.Net;
 using System.Threading;
 using System.Net.Sockets;
 using System.Collections.Concurrent;
-
 namespace MavLinkNet
 {
     public class MavLinkUdpTransport: MavLinkGenericTransport
@@ -111,28 +110,39 @@ namespace MavLinkNet
             {
                 mIsActive = false;
             }
+            catch (Exception ex)
+            {
+                Microsoft.VisualBasic.Interaction.MsgBox(ex.ToString());
+            }
         }
 
         private void ProcessReceiveQueue(object state)
         {
-            while (true)
+            try
             {
-                byte[] buffer;
-
-                if (mReceiveQueue.TryDequeue(out buffer))
+                while (true)
                 {
-                    mMavLink.ProcessReceivedBytes(buffer, 0, buffer.Length);
-                }
-                else
-                {
-                    // Empty queue, sleep until signalled
-                    mReceiveSignal.WaitOne();
+                    byte[] buffer;
 
-                    if (!mIsActive) break;
+                    if (mReceiveQueue.TryDequeue(out buffer))
+                    {
+                        mMavLink.ProcessReceivedBytes(buffer, 0, buffer.Length);
+                    }
+                    else
+                    {
+                        // Empty queue, sleep until signalled
+                        mReceiveSignal.WaitOne();
+
+                        if (!mIsActive) break;
+                    }
                 }
+
+                HandleReceptionEnded(this);
             }
-
-            HandleReceptionEnded(this);
+            catch (Exception ex)
+            {
+                Microsoft.VisualBasic.Interaction.MsgBox(ex.ToString());
+            }
         }
 
 
@@ -141,21 +151,27 @@ namespace MavLinkNet
 
         private void ProcessSendQueue(object state)
         {
-            while (true)
+            try
             {
-                UasMessage msg;
-
-                if (mSendQueue.TryDequeue(out msg))
+                while (true)
                 {
-                    SendMavlinkMessage(state as IPEndPoint, msg);
-                }
-                else
-                {
-                    // Queue is empty, sleep until signalled
-                    mSendSignal.WaitOne();
+                    UasMessage msg;
 
-                    if (!mIsActive) break;
+                    if (mSendQueue.TryDequeue(out msg))
+                    {
+                        SendMavlinkMessage(state as IPEndPoint, msg);
+                    }
+                    else
+                    {
+                        // Queue is empty, sleep until signalled
+                        mSendSignal.WaitOne();
+
+                        if (!mIsActive) break;
+                    }
                 }
+            }
+            catch (Exception ex){
+                Microsoft.VisualBasic.Interaction.MsgBox(ex.ToString());
             }
         }
 
