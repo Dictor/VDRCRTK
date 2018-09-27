@@ -22,5 +22,100 @@ Hamster Engine Project
   속성을 재정의합니다.
 </summary>
 </member>
+<member name="M:Hamster_Engine_Project.RTCMMessage.#ctor(System.Collections.Generic.List{System.Byte},System.Byte[],System.Int64,System.Int64,System.DateTime)">
+ <summary>
+ 새로운 RTCM 메세지 컨테이너를 초기화 합니다
+ </summary>
+ <param name="data">RTCM 메세지에서 헤더를 제외한 데이터 프레임</param>
+ <param name="fullmsg">RTCM 전체 메세지</param>
+ <param name="len">RTCM 메세지에서 헤더를 제외한 데이터 프레임의 길이</param>
+ <param name="crc">RTCM 메세지의 CRC</param>
+ <param name="time">메세지가 수신된 시간</param>
+</member>
+<member name="M:Hamster_Engine_Project.Mavlink.MavlinkDefMessage.GPS_RTCM_DATA.#ctor(System.Byte,System.Byte,System.Byte,System.Byte,System.Byte,System.Byte[])">
+ <summary>
+ GPS_RTCM_DATA (#233) 메세지를 초기화 합니다.
+ </summary>
+ <param name="seq">시퀀스 ID</param>
+ <param name="sysid">Sender의 시스템 ID</param>
+ <param name="compid">Sender의 컴포넌트 ID</param>
+ <param name="flag">플래그 (LSB 첫번째 비트는 메시지가 조각난 것을 의미하고, 다음 2 비트는 프래그먼트 ID이며, 나머지 5 비트는 시퀀스 ID에 사용됩니다)</param>
+ <param name="length">RTCM 데이터의 길이</param>
+ <param name="rtcmdata">RTCM 메시지 (단편화되었을 수 있음, 최대 180바이트)</param>
+</member>
+<member name="M:Hamster_Engine_Project.Mavlink.Mavlink2Message.#ctor(System.Byte,System.Byte,System.Byte,System.UInt32,System.Byte,System.Byte,System.Byte[],System.Byte)">
+ <summary>
+ 새로운 Mavlink 버전2 Message를 초기화합니다, 이 메서드는 메세지의 Length와 Checksum을 자동으로 계산하므로 안전합니다.
+ mavlink/c_library_v2/blob/master/mavlink_helpers.h의 mavlink_finalize_message_buffer
+ </summary>
+ <param name="seq">패킷의 시퀀스</param>
+ <param name="sysid">Sender의 시스템 ID</param>
+ <param name="compid">Sender의 컴포넌트 ID</param>
+ <param name="msgid">메세지 ID (3바이트)</param>
+ <param name="tsysid">포인트to포인트 전송 모드에서 타겟의 시스템 ID (선택적, 현재 사용되지 않음)</param>
+ <param name="tcompid">포인트to포인트 전송 모드에서 타겟의 컴포넌트 ID (선택적, 현재 사용되지 않음)</param>
+ <param name="payloaddata">페이로드 데이터 (최대 253바이트)</param>
+ <param name="crcextra">CRC Extra (메세지의 CRC)</param>
+</member>
+<member name="M:Hamster_Engine_Project.Mavlink.Mavlink2Message.Serialize">
+ <summary>
+ 메세지를 바이트 배열로 직렬화 합니다
+ </summary>
+ <returns>직렬화된 바이트 배열</returns>
+</member>
+<member name="M:Hamster_Engine_Project.Mavlink.Mavlink2Message.ToString">
+ <summary>
+ 디버그를 위해 메세지의 내용을 문자열로 모두 출력합니다 
+ </summary>
+ <returns></returns>
+</member>
+<member name="M:Hamster_Engine_Project.Mavlink.Mavlink1Message.#ctor(System.Byte,System.Byte,System.Byte,System.Byte,System.Byte[],System.Byte)">
+ <summary>
+ 새로운 Mavlink 버전 1 Message를 초기화합니다, 이 메서드는 메세지의 Length와 Checksum을 자동으로 계산하므로 안전합니다.
+ mavlink/c_library_v2/blob/master/mavlink_helpers.h의 mavlink_finalize_message_buffer
+ </summary>
+ <param name="seq">패킷의 시퀀스</param>
+ <param name="sysid">Sender의 시스템 ID</param>
+ <param name="compid">Sender의 컴포넌트 ID</param>
+ <param name="msgid">메세지 ID </param>
+ <param name="payloaddata">페이로드 데이터 (최대 255바이트)</param>
+ <param name="crcextra">CRC Extra (메세지의 CRC)</param>
+</member>
+<member name="M:Hamster_Engine_Project.Mavlink.Mavlink1Message.Serialize">
+ <summary>
+ 메세지를 바이트 배열로 직렬화 합니다
+ </summary>
+ <returns>직렬화된 바이트 배열</returns>
+</member>
+<member name="M:Hamster_Engine_Project.Mavlink.Mavlink1Message.ToString">
+ <summary>
+ 디버그를 위해 메세지의 내용을 문자열로 모두 출력합니다 
+ </summary>
+ <returns></returns>
+</member>
+<member name="M:Hamster_Engine_Project.Mavlink.CRCX25.Accumulate(System.Byte,System.UInt16@)">
+ <summary>
+ 16비트 X.25 CRC 변수에 문자 하나를 누적합니다
+ mavlink/c_library_v2/blob/master/checksum.h의 crc_accumulate
+ </summary>
+ <param name="data">누적할 문자</param>
+ <param name="accumcrc">축적할 CRC</param>
+</member>
+<member name="M:Hamster_Engine_Project.Mavlink.CRCX25.AccumulateBuffer(System.Byte[],System.UInt16@)">
+ <summary>
+ 16비트 X.25 CRC 변수에 바이트 배열을 누적합니다
+ mavlink/c_library_v2/blob/master/checksum.h의 crc_accumulate_buffer
+ </summary>
+ <param name="data">누적할 바이트 배열</param>
+ <param name="accumcrc">축적할 CRC</param>
+</member>
+<member name="M:Hamster_Engine_Project.Mavlink.CRCX25.Calculate(System.Byte[])">
+ <summary>
+ 바이트 배열에 대해 X.25 CRC를 계산합니다
+ mavlink/c_library_v2/blob/master/checksum.h의 crc_calculate
+ </summary>
+ <param name="data">계산할 바이트 배열</param>
+ <returns>계산된 16비트 X.25 CRC</returns>
+</member>
 </members>
 </doc>
