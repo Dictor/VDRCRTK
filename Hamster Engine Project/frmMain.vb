@@ -241,12 +241,24 @@ Public Class frmMain
     Private Sub MavSendRTCM(r As RTCMMessage)
         Try
             lstRawSerialPrint("[MavLink UDP 전송 요청] → ID : " & r.ID)
-            Dim flags As Byte = (mavCurrentSeqID << 3) Or 0
+            Dim flags As Byte = (mavCurrentSeqID << 3) And &HFF
+            lstRawSerialPrint("[MavLink UDP 전송 요청] → FLAG : " & flags)
             Dim nowmsg As New Mavlink.MavlinkDefMessage.GPS_RTCM_DATA(mavCurrentSeqID, mavSystemID, mavComponentID, flags, r.FullMessage.Count, r.FullMessage)
+            Project.LogWrite.DynamicInvoke("[MavLink UDP 메세지 생성 완료]")
             Dim snowmsg = nowmsg.Serialize()
+            Project.LogWrite.DynamicInvoke("[MavLink UDP 메세지 직렬화 완료]")
             UDPSender.Send(snowmsg, snowmsg.Count, UDPEndpoint)
             Project.LogWrite.DynamicInvoke("[MavLink UDP 메세지 전송]" & vbCrLf & nowmsg.ToString)
-            mavCurrentSeqID += 1
+            If mavComponentID >= 31 Then
+                mavCurrentSeqID = 0
+            Else
+                mavCurrentSeqID += 1
+            End If
+        Catch ex As OverflowException
+            lstRawSerialPrint("[MavLink 전송 실패] → " & ex.GetType.FullName)
+            mavCurrentSeqID = 0
+        Catch ex As Mavlink.MavlinkException.MavlinkPayloadTooLargeException
+            lstRawSerialPrint("[MavLink 전송 실패] → " & ex.GetType.FullName)
         Catch ex As Exception
             lstRawSerialPrint("[MavLink 전송 실패] → " & ex.GetType.FullName)
             Project.EngineShowErr.DynamicInvoke("MAVLINK_SEND_ERROR", "MAVLINK 메세지를 전송하는데 실패했습니다!", "", "", ex)

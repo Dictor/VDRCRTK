@@ -1,14 +1,13 @@
-﻿'MAVLINK 버전 2의 구현입니다
+﻿'MAVLINK의 VB.NET 구현입니다
 Imports Hamster_Engine_Project.Mavlink.MavlinkException
 
 Public Class Mavlink
     Public Class MavlinkDefMessage
         Public Class GPS_RTCM_DATA
             '구현은 c_library_v2/common/mavlink_msg_gps_rtcm_data.h 참고
-            Inherits Mavlink1Message
-            Public flags As Byte
-            Public len As Byte
-            Public data As Byte
+            Inherits Mavlink2Message
+            Public Const DefMessageID = 233
+            Public Const DefMessageCRCExtra = 35
 
             ''' <summary>
             ''' GPS_RTCM_DATA (#233) 메세지를 초기화 합니다.
@@ -20,7 +19,7 @@ Public Class Mavlink
             ''' <param name="length">RTCM 데이터의 길이</param>
             ''' <param name="rtcmdata">RTCM 메시지 (단편화되었을 수 있음, 최대 180바이트)</param>
             Public Sub New(seq As Byte, sysid As Byte, compid As Byte, flag As Byte, length As Byte, rtcmdata As Byte())
-                MyBase.New(seq, sysid, compid, &HE9, rtcmdata, &H23)
+                MyBase.New(seq, sysid, compid, DefMessageID, 0, 0)
                 If rtcmdata.Count > 180 Then
                     Throw New MavlinkPayloadTooLargeException(rtcmdata.Count, 180)
                 End If
@@ -28,7 +27,7 @@ Public Class Mavlink
                 payload.Add(flag)
                 payload.Add(length)
                 payload.AddRange(rtcmdata)
-                MyBase.Payload = payload.ToArray
+                SetPayload(rtcmdata, DefMessageCRCExtra)
             End Sub
         End Class
     End Class
@@ -54,7 +53,7 @@ Public Class Mavlink
         Private isInited As Boolean = False
 
         ''' <summary>
-        ''' 새로운 Mavlink 버전2 Message를 초기화합니다, 이 메서드는 메세지의 Length와 Checksum을 자동으로 계산하므로 안전합니다.
+        ''' 새로운 Mavlink 버전2 메세지 컨테이너를 초기화합니다, 이 메서드는 메세지의 Length와 Checksum을 자동으로 계산하므로 안전합니다.
         ''' mavlink/c_library_v2/blob/master/mavlink_helpers.h의 mavlink_finalize_message_buffer
         ''' </summary>
         ''' <param name="seq">패킷의 시퀀스</param>
@@ -64,7 +63,7 @@ Public Class Mavlink
         ''' <param name="tsysid">포인트to포인트 전송 모드에서 타겟의 시스템 ID (선택적, 현재 사용되지 않음)</param>
         ''' <param name="tcompid">포인트to포인트 전송 모드에서 타겟의 컴포넌트 ID (선택적, 현재 사용되지 않음)</param>
         ''' <param name="payloaddata">페이로드 데이터 (최대 253바이트)</param>
-        ''' <param name="crcextra">CRC Extra (메세지의 CRC)</param>
+        ''' <param name="crcextra">CRC Extra (메세지 ID의 CRC)</param>
         Public Sub New(seq As Byte, sysid As Byte, compid As Byte, msgid As UInt32, tsysid As Byte, tcompid As Byte, payloaddata As Byte(), crcextra As Byte)
             Sequence = seq
             SystemID = sysid
@@ -83,10 +82,56 @@ Public Class Mavlink
             MagicMarker = MavlinkConst.Protocol.MAVLINK_STX
             InCompatibleFlags = 0
             ComponentID = 0
-            Dim crctemp As Byte() = {Length, InCompatibleFlags, CompatibleFlags, Sequence, SystemID, ComponentID, MessageID & &HFF, (MessageID >> 8) & &HFF, (MessageID >> 16) & &HFF}
-            Checksum = CRCX25.Calculate(crctemp)
-            CRCX25.AccumulateBuffer(Payload, Checksum)
-            CRCX25.Accumulate(crcextra, Checksum)
+            Dim crctemp As New List(Of Byte) From {Length, InCompatibleFlags, CompatibleFlags, Sequence, SystemID, ComponentID, MessageID And &HFF, (MessageID >> 8) And &HFF, (MessageID >> 16) And &HFF}
+            crctemp.AddRange(Payload)
+            crctemp.Add(crcextra)
+            Dim nowcrcobj = New Crc16Ccitt(Global.InitialCrcValue.NonZero1)
+            Checksum = nowcrcobj.ComputeChecksum(crctemp.ToArray)
+            isInited = True
+        End Sub
+
+        ''' <summary>
+        ''' 새로운 Mavlink 버전2 메세지 컨테이너를 초기화합니다, 이 메서드는 메세지의 Payload를 추후에 SetPayload 메서드로 정해주어야 합니다.
+        ''' isInited는 SetPayload 메서드가 호출되기전까지 False로 유지되며 이때 Length와 CRC가 정해집니다.
+        ''' </summary>
+        ''' <param name="seq">패킷의 시퀀스</param>
+        ''' <param name="sysid">Sender의 시스템 ID</param>
+        ''' <param name="compid">Sender의 컴포넌트 ID</param>
+        ''' <param name="msgid">메세지 ID (3바이트)</param>
+        ''' <param name="tsysid">포인트to포인트 전송 모드에서 타겟의 시스템 ID (선택적, 현재 사용되지 않음)</param>
+        ''' <param name="tcompid">포인트to포인트 전송 모드에서 타겟의 컴포넌트 ID (선택적, 현재 사용되지 않음)</param>
+        Public Sub New(seq As Byte, sysid As Byte, compid As Byte, msgid As UInt32, tsysid As Byte, tcompid As Byte)
+            Sequence = seq
+            SystemID = sysid
+            ComponentID = compid
+            MessageID = msgid
+            TargetSystemID = tsysid
+            TargetComponentID = tsysid
+            MagicMarker = MavlinkConst.Protocol.MAVLINK_STX
+            InCompatibleFlags = 0
+            ComponentID = 0
+            isInited = False
+        End Sub
+
+        ''' <summary>
+        ''' 페이로드가 적재되지 않은 메세지 컨테이너에 페이로드를 적재하고 Extra CRC를 지정합니다
+        ''' </summary>
+        ''' <param name="data">페이로드 데이터</param>
+        ''' <param name="crcextra">CRC Extra (메세지 ID의 CRC)</param>
+        Public Sub SetPayload(data As Byte(), crcextra As Byte)
+            If isInited Then
+                Throw New MavlinkMessageAlreadyInitialized
+            End If
+            If Not data.Count > MavlinkConst.Protocol.v2MaximumPayloadSize Then
+                Payload = data
+            Else
+                Throw New MavlinkPayloadTooLargeException(data.Count)
+            End If
+            Dim crctemp As New List(Of Byte) From {Length, InCompatibleFlags, CompatibleFlags, Sequence, SystemID, ComponentID, MessageID And &HFF, (MessageID >> 8) And &HFF, (MessageID >> 16) And &HFF}
+            crctemp.AddRange(Payload)
+            crctemp.Add(crcextra)
+            Dim nowcrcobj = New Crc16Ccitt(Global.InitialCrcValue.NonZero1)
+            Checksum = nowcrcobj.ComputeChecksum(crctemp.ToArray)
             isInited = True
         End Sub
 
@@ -98,7 +143,7 @@ Public Class Mavlink
             If Not isInited Then
                 Throw New MavlinkMessageNotInitialized
             End If
-            Dim data As New List(Of Byte) From {MagicMarker, Length, InCompatibleFlags, CompatibleFlags, Sequence, SystemID, ComponentID, MessageID & &HFF, (MessageID >> 8) & &HFF, (MessageID >> 16) & &HFF}
+            Dim data As New List(Of Byte) From {MagicMarker, Length, InCompatibleFlags, CompatibleFlags, Sequence, SystemID, ComponentID, MessageID And &HFF, (MessageID >> 8) And &HFF, (MessageID >> 16) And &HFF}
             data.AddRange(Payload)
             data.AddRange({Checksum And &HFF, Checksum >> 8})
             Return data.ToArray
@@ -239,7 +284,7 @@ Public Class Mavlink
         ''' <param name="data">누적할 문자</param>
         ''' <param name="accumcrc">축적할 CRC</param>
         Public Shared Sub Accumulate(data As Byte, ByRef accumcrc As UInt16)
-            Dim temp As Byte
+            Dim temp As UInt16 '확인하기
             temp = data Xor (accumcrc And &HFF)
             temp = temp Xor (temp << 4)
             accumcrc = (accumcrc >> 8) Xor (temp << 8) Xor (temp << 3) Xor (temp >> 4)
@@ -252,8 +297,8 @@ Public Class Mavlink
         ''' <param name="data">누적할 바이트 배열</param>
         ''' <param name="accumcrc">축적할 CRC</param>
         Public Shared Sub AccumulateBuffer(ByVal data As Byte(), ByRef accumcrc As UInt16)
-            For Each nowbyte In data
-                Accumulate(nowbyte, accumcrc)
+            For i As Integer = 0 To data.Count - 1
+                Accumulate(data(i), accumcrc)
             Next
         End Sub
 
@@ -266,12 +311,18 @@ Public Class Mavlink
         Public Shared Function Calculate(ByVal data As Byte()) As UInt16
             Dim temp As UInt16
             temp = X25_INIT_CRC
-            For Each nowbyte In data
-                Accumulate(nowbyte, temp)
+            For i As Integer = 0 To data.Count - 1
+                Accumulate(data(i), temp)
             Next
             Return temp
         End Function
     End Class
+
+    Public Enum InitialCrcValue
+        Zeros
+        NonZero1 = 65535
+        NonZero2 = 7439
+    End Enum
 
     Public Class MavlinkException
         Public Class MavlinkPayloadTooLargeException
@@ -293,6 +344,13 @@ Public Class Mavlink
             Inherits Exception
             Public Sub New()
                 MyBase.New("메세지가 초기화되지 않았습니다")
+            End Sub
+        End Class
+
+        Public Class MavlinkMessageAlreadyInitialized
+            Inherits Exception
+            Public Sub New()
+                MyBase.New("메세지가 이미 초기화되어있습니다")
             End Sub
         End Class
     End Class
