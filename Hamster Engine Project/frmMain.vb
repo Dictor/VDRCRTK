@@ -4,7 +4,6 @@ Imports System.Net
 Imports System.Text
 Imports System.Threading
 Imports System.Windows.Forms
-Imports MavLinkNet
 
 Public Class frmMain
     Private Serial As New SerialPort
@@ -18,9 +17,13 @@ Public Class frmMain
     Private RTCMexplain As New Dictionary(Of String, String)
     Private MessageCount As Long = 0
 
-    Private mavudp As MavLinkNet.MavLinkUdpTransport
     Private isMavReady As Boolean = False
     Private mavMessageFlag As Byte
+    Private mavCurrentSeqID As Integer
+    Private mavSystemID As Integer
+    Private mavComponentID As Integer
+    Private UDPSender As New Sockets.UdpClient
+    Private UDPEndpoint As IPEndPoint
 
     Private Sub txtProgName_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         txtProgName.Text = Project.Version.GetName & " " & Project.Version.GetVersion(True)
@@ -31,6 +34,9 @@ Public Class frmMain
         lstData.Sorting = SortOrder.Descending
         lstData.ListViewItemSorter = New ListViewComparer(1, SortOrder.Ascending)
         Dim s = lstData.ListViewItemSorter()
+
+        Dim dummyrtcm As Byte() = {&HD3, 1, 255, 255, 255}
+        latestData.Add("-1", New RTCMMessage(New List(Of Byte) From {255}, dummyrtcm, 1, 0, Now))
     End Sub
 
     Private Function WaitRTCMMessage() As RTCMMessage
@@ -209,30 +215,18 @@ Public Class frmMain
 
     Private Sub btnMavConnect_Click(sender As Object, e As EventArgs) Handles btnMavConnect.Click 'https://mavlink.io/kr/messages/common.html#GPS_RTCM_DATA
         Try
-            mavudp = New MavLinkUdpTransport
-            Dim udpip As IPAddress
-            IPAddress.TryParse(txtMavIP.Text, udpip)
-            lstRawSerialPrint("[MavLink 연결 시도] → " & udpip.ToString & ":" & txtMavPort.Text)
-            mavudp.TargetIpAddress = udpip
-            mavudp.UdpTargetPort = txtMavPort.Text
-            mavudp.UdpListeningPort = 19000
-            AddHandler mavudp.OnPacketReceived, AddressOf MavPacketRecv
-            mavudp.Initialize()
-            lstRawSerialPrint("[MavLink 연결 성공]")
+            Dim nowip As IPAddress
+            IPAddress.TryParse(txtMavIP.Text, nowip)
+            UDPEndpoint = New IPEndPoint(nowip, Convert.ToInt16(txtMavPort.Text))
+            lstRawSerialPrint("[MavLink UDP 주소 설정] → " & UDPEndpoint.Address.ToString & ":" & UDPEndpoint.Port.ToString)
+            mavSystemID = Convert.ToInt16(txtMavSysid.Text)
+            mavComponentID = Convert.ToInt16(txtMavCompid.Text)
+            lstRawSerialPrint("[MavLink ID 설정] → SYS : " & mavSystemID.ToString & ", COMP : " & mavComponentID.ToString)
             isMavReady = True
         Catch ex As Exception
-            lstRawSerialPrint("[MavLink 연결 실패] → " & ex.GetType.FullName)
-            Project.EngineShowErr.DynamicInvoke("MAVLINK_OPEN_ERROR", "MAVLINK 연결을 여는데 실패했습니다!", "", "", ex)
+            lstRawSerialPrint("[MavLink UDP 주소 설정 실패] → " & ex.GetType.FullName)
+            Project.EngineShowErr.DynamicInvoke("MAVLINK_OPEN_ERROR", "MAVLINK 주소를 설정하는데 실패했습니다!", "", "", ex)
             isMavReady = False
-        End Try
-    End Sub
-
-    Private Sub MavPacketRecv(sender As Object, packet As MavLinkPacket)
-        Try
-            lstRawSerialPrint("[MavLink 수신 이벤트] → 메세지 ID : " & packet.MessageId.ToString)
-        Catch ex As Exception
-            lstRawSerialPrint("[MavLink 수신 실패] → " & ex.GetType.FullName)
-            Project.EngineShowErr.DynamicInvoke("MAVLINK_RECEIVE_ERROR", "MAVLINK 메세지를 수신하는데 실패했습니다!", "", "", ex)
         End Try
     End Sub
 
@@ -246,33 +240,20 @@ Public Class frmMain
 
     Private Sub MavSendRTCM(r As RTCMMessage)
         Try
-            lstRawSerialPrint("[MavLink 전송 요청] → ID : " & r.ID & " FLAG : " & mavMessageFlag.ToString("x2"))
-            Dim msg = New UasGpsRtcmData
-            Dim data = MakeRTCMDataFrame(r.FullMessage)
-            If data Is Nothing Then
-                lstRawSerialPrint("[MavLink 메세지 생성 오류, 생략합니다] → ID : " & r.ID)
-                Exit Sub
-            End If
-            msg.Data = data
-            msg.Len = r.Length
-            msg.Flags = mavMessageFlag
-            NextFlag()
-            mavudp.SendMessage(msg)
+            lstRawSerialPrint("[MavLink UDP 전송 요청] → ID : " & r.ID)
+            Dim flags As Byte = (mavCurrentSeqID << 3) Or 0
+            Dim nowmsg As New Mavlink.MavlinkDefMessage.GPS_RTCM_DATA(mavCurrentSeqID, mavSystemID, mavComponentID, flags, r.FullMessage.Count, r.FullMessage)
+            Dim snowmsg = nowmsg.Serialize()
+            UDPSender.Send(snowmsg, snowmsg.Count, UDPEndpoint)
+            Project.LogWrite.DynamicInvoke("[MavLink UDP 메세지 전송]" & vbCrLf & nowmsg.ToString)
+            mavCurrentSeqID += 1
         Catch ex As Exception
             lstRawSerialPrint("[MavLink 전송 실패] → " & ex.GetType.FullName)
             Project.EngineShowErr.DynamicInvoke("MAVLINK_SEND_ERROR", "MAVLINK 메세지를 전송하는데 실패했습니다!", "", "", ex)
         End Try
     End Sub
 
-    Private Sub NextFlag()
-        If mavMessageFlag = &HF8 Then
-            mavMessageFlag = 0
-        Else
-            mavMessageFlag += 8
-        End If
-    End Sub
-
-    Private Sub Button1_Click(sender As Object, e As EventArgs) Handles btnListReset.Click
+    Private Sub btnListReset_Click(sender As Object, e As EventArgs) Handles btnListReset.Click
         latestData.Clear()
     End Sub
 
@@ -290,9 +271,8 @@ Public Class frmMain
         Return b
     End Function
 
-    Private Sub Button1_Click_1(sender As Object, e As EventArgs) Handles btnMavDIsconnect.Click
+    Private Sub btnMavDIsconnect_Click(sender As Object, e As EventArgs) Handles btnMavDIsconnect.Click
         isMavReady = False
-        mavudp.Dispose()
         lstRawSerialPrint("[MavLink 닫기 성공]")
     End Sub
 End Class
@@ -305,6 +285,14 @@ Public Class RTCMMessage
     Public ID As Integer
     Public IssueTime As Date
 
+    ''' <summary>
+    ''' 새로운 RTCM 메세지 컨테이너를 초기화 합니다
+    ''' </summary>
+    ''' <param name="data">RTCM 메세지에서 헤더를 제외한 데이터 프레임</param>
+    ''' <param name="fullmsg">RTCM 전체 메세지</param>
+    ''' <param name="len">RTCM 메세지에서 헤더를 제외한 데이터 프레임의 길이</param>
+    ''' <param name="crc">RTCM 메세지의 CRC</param>
+    ''' <param name="time">메세지가 수신된 시간</param>
     Public Sub New(data As List(Of Byte), fullmsg As Byte(), len As Long, crc As Long, time As Date)
         data = data
         FullMessage = fullmsg

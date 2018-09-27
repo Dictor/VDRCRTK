@@ -43,12 +43,6 @@
     <OptionInfer>On</OptionInfer>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="mavlink">
-      <HintPath>..\OUTPUT\library\mavlink.dll</HintPath>
-    </Reference>
-    <Reference Include="mavlinkgen">
-      <HintPath>..\OUTPUT\library\mavlinkgen.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -78,6 +72,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="HE_Common_Component.vb" />
+    <Compile Include="Mavlink2.vb" />
     <Compile Include="Projcetcore.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
