@@ -47,8 +47,6 @@ Partial Class frmMain
         Me.chkShowDefID = New System.Windows.Forms.CheckBox()
         Me.btnListReset = New System.Windows.Forms.Button()
         Me.txtKeywordCount = New System.Windows.Forms.Label()
-        Me.timLstUpdate = New System.Windows.Forms.Timer(Me.components)
-        Me.Label5 = New System.Windows.Forms.Label()
         Me.lstData = New Hamster_Engine_Project.DBListView()
         Me.colID = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.colIssueTime = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
@@ -56,6 +54,8 @@ Partial Class frmMain
         Me.colRealLength = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.colCRC = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.colExplain = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
+        Me.timLstUpdate = New System.Windows.Forms.Timer(Me.components)
+        Me.Label5 = New System.Windows.Forms.Label()
         Me.grpComm.SuspendLayout()
         Me.GroupBox1.SuspendLayout()
         Me.SuspendLayout()
@@ -105,7 +105,7 @@ Partial Class frmMain
         Me.txtMavCompid.Name = "txtMavCompid"
         Me.txtMavCompid.Size = New System.Drawing.Size(46, 25)
         Me.txtMavCompid.TabIndex = 20
-        Me.txtMavCompid.Text = "1"
+        Me.txtMavCompid.Text = "0"
         '
         'Label7
         '
@@ -123,7 +123,7 @@ Partial Class frmMain
         Me.txtMavSysid.Name = "txtMavSysid"
         Me.txtMavSysid.Size = New System.Drawing.Size(46, 25)
         Me.txtMavSysid.TabIndex = 18
-        Me.txtMavSysid.Text = "3"
+        Me.txtMavSysid.Text = "255"
         '
         'Label6
         '
@@ -186,7 +186,7 @@ Partial Class frmMain
         Me.txtMavIP.Name = "txtMavIP"
         Me.txtMavIP.Size = New System.Drawing.Size(112, 25)
         Me.txtMavIP.TabIndex = 11
-        Me.txtMavIP.Text = "192.168.4.3"
+        Me.txtMavIP.Text = "192.168.4.1"
         '
         'Label3
         '
@@ -307,20 +307,6 @@ Partial Class frmMain
         Me.txtKeywordCount.TabIndex = 1
         Me.txtKeywordCount.Text = "키워드 갯수 : "
         '
-        'timLstUpdate
-        '
-        Me.timLstUpdate.Interval = 500
-        '
-        'Label5
-        '
-        Me.Label5.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.Label5.Font = New System.Drawing.Font("맑은 고딕", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(129, Byte))
-        Me.Label5.Location = New System.Drawing.Point(643, 9)
-        Me.Label5.Name = "Label5"
-        Me.Label5.Size = New System.Drawing.Size(191, 18)
-        Me.Label5.TabIndex = 11
-        Me.Label5.Text = "제작 김정현 (kimdictor@gmail.com)"
-        '
         'lstData
         '
         Me.lstData.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
@@ -362,6 +348,20 @@ Partial Class frmMain
         '
         Me.colExplain.Text = "메세지 설명"
         Me.colExplain.Width = 450
+        '
+        'timLstUpdate
+        '
+        Me.timLstUpdate.Interval = 500
+        '
+        'Label5
+        '
+        Me.Label5.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.Label5.Font = New System.Drawing.Font("맑은 고딕", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(129, Byte))
+        Me.Label5.Location = New System.Drawing.Point(643, 9)
+        Me.Label5.Name = "Label5"
+        Me.Label5.Size = New System.Drawing.Size(191, 18)
+        Me.Label5.TabIndex = 11
+        Me.Label5.Text = "제작 김정현 (kimdictor@gmail.com)"
         '
         'frmMain
         '

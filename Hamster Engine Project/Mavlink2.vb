@@ -85,8 +85,7 @@ Public Class Mavlink
             Dim crctemp As New List(Of Byte) From {Length, InCompatibleFlags, CompatibleFlags, Sequence, SystemID, ComponentID, MessageID And &HFF, (MessageID >> 8) And &HFF, (MessageID >> 16) And &HFF}
             crctemp.AddRange(Payload)
             crctemp.Add(crcextra)
-            Dim nowcrcobj = New Crc16Ccitt(Global.InitialCrcValue.NonZero1)
-            Checksum = nowcrcobj.ComputeChecksum(crctemp.ToArray)
+            Checksum = CRC16MCRF4XX(crctemp.ToArray)
             isInited = True
         End Sub
 
@@ -130,8 +129,7 @@ Public Class Mavlink
             Dim crctemp As New List(Of Byte) From {Length, InCompatibleFlags, CompatibleFlags, Sequence, SystemID, ComponentID, MessageID And &HFF, (MessageID >> 8) And &HFF, (MessageID >> 16) And &HFF}
             crctemp.AddRange(Payload)
             crctemp.Add(crcextra)
-            Dim nowcrcobj = New Crc16Ccitt(Global.InitialCrcValue.NonZero1)
-            Checksum = nowcrcobj.ComputeChecksum(crctemp.ToArray)
+            Checksum = CRC16MCRF4XX(crctemp.ToArray)
             isInited = True
         End Sub
 
@@ -272,8 +270,23 @@ Public Class Mavlink
             Public Const v1MaximumPayloadSize As Integer = 253
         End Class
     End Class
+    Public Shared Function CRC16MCRF4XX(data As Byte()) As UInt16
+        Dim crc
+        crc = &HFFFF
+        For Each nowbyte In data
+            CRC = CRC Xor nowbyte
+            For i As Integer = 0 To 7
+                If (CRC And 1) = 1 Then
+                    CRC = (CRC >> 1) Xor &H8408
+                Else
+                    CRC = (CRC >> 1)
+                End If
+            Next
+        Next
+        Return crc
+    End Function
 
-    Private Class CRCX25
+    Public Class CRCX25
         Private Const X25_INIT_CRC As UInt16 = &HFFFF
         Private Const X25_VALIDATE_CRC As UInt16 = &HF0B8
 
@@ -317,12 +330,6 @@ Public Class Mavlink
             Return temp
         End Function
     End Class
-
-    Public Enum InitialCrcValue
-        Zeros
-        NonZero1 = 65535
-        NonZero2 = 7439
-    End Enum
 
     Public Class MavlinkException
         Public Class MavlinkPayloadTooLargeException
