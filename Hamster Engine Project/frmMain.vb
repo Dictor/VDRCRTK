@@ -40,29 +40,41 @@ Public Class frmMain
     End Sub
 
     Private Function WaitRTCMMessage() As RTCMMessage
+        '페이로드 빼고 6바이트 (페이로드가 1바이트인 예)
+        'bit          value                byte
+        '1~8        : 0xD3	            -> 0
+        '9~13       : 0	                -> 1
+        '14~24      : LENGTH = 1        -> 2
+        '25~32      : PAYLOAD(1Byte)    -> 3
+        '33~56      : CRC               -> 4 5 6
         Dim RTCMcount = 0, RTCMlen = 0, RTCMmsgid As Integer
         Dim RTCMcrc As Long = 0
         Dim RTCMdata As New List(Of Byte)
         Dim result As RTCMMessage
+        Dim dropbytes As Integer = 0
         Do While True
             Do Until bufRawSerial.Count > 0 '메세지 수신까지 대기
             Loop
             Dim nowbyte = bufRawSerial.Dequeue
-
             If RTCMcount = 0 Then
-                If Not nowbyte = &HD3 Then 'RTCM 헤더 수신까지 대기
+                If Not nowbyte = &HD3 Then 'RTCM 헤더 수신까지 대기 1
+                    dropbytes += 1
                     Continue Do
+                Else
+                    If Not dropbytes = 0 Then
+                        lstRawSerialPrint("[DROP RTCM]" & dropbytes.ToString)
+                    End If
                 End If
-            ElseIf RTCMcount = 1 Then '두번째 세번째 바이트는 메세지 length
-                RTCMlen = (nowbyte And &H3) << 6
+            ElseIf RTCMcount = 1 Then '두번째 세번째 바이트는 메세지 length 2
+                RTCMlen = (nowbyte And &H3) << 8
             ElseIf RTCMcount = 2 Then
                 RTCMlen += nowbyte
-            ElseIf RTCMcount <= 2 + RTCMlen Then
+            ElseIf RTCMcount <= 2 + RTCMlen Then '3
                 RTCMdata.Add(nowbyte)
-            ElseIf RTCMcount > 2 + RTCMlen And RTCMcount < (2 + RTCMlen) + 2 Then
+            ElseIf (RTCMcount > 2 + RTCMlen) And (RTCMcount <= (2 + RTCMlen) + 2) Then '4,  5
                 RTCMcrc = RTCMcrc << 8
                 RTCMcrc += nowbyte
-            ElseIf RTCMcount = (2 + RTCMlen) + 2 Then
+            ElseIf RTCMcount = (2 + RTCMlen) + 3 Then '6
                 RTCMcrc = RTCMcrc << 8
                 RTCMcrc += nowbyte
                 bufEachMessage.Add(nowbyte)
@@ -240,16 +252,43 @@ Public Class frmMain
 
     Private Sub MavSendRTCM(r As RTCMMessage)
         Try
-            lstRawSerialPrint("[MavLink UDP 전송 요청] → ID : " & r.ID)
-            Dim flags As Byte = (mavCurrentSeqID << 3) And &HFF
-            lstRawSerialPrint("[MavLink UDP 전송 요청] → FLAG : " & flags)
-            Dim nowmsg As New Mavlink.MavlinkDefMessage.GPS_RTCM_DATA(mavCurrentSeqID, mavSystemID, mavComponentID, flags, r.FullMessage.Count, r.FullMessage)
-            Project.LogWrite.DynamicInvoke("[MavLink UDP 메세지 생성 완료]")
-            Dim snowmsg = nowmsg.Serialize()
-            Project.LogWrite.DynamicInvoke("[MavLink UDP 메세지 직렬화 완료]")
-            UDPSender.Send(snowmsg, snowmsg.Count, UDPEndpoint)
-            Project.LogWrite.DynamicInvoke("[MavLink UDP 메세지 전송]" & vbCrLf & nowmsg.ToString)
-            If mavComponentID >= 31 Then
+            If r.FullMessage.Count > 180 Then
+                lstRawSerialPrint("[MavLink 분할 UDP 전송 요청] → ID : " & r.ID)
+                Dim flags As Byte = (mavCurrentSeqID << 3) And &HFF
+                Dim fragdata1 As New List(Of Byte)
+                Dim fragdata2 As New List(Of Byte)
+                For i As Integer = 0 To 179
+                    fragdata1.Add(r.FullMessage(i))
+                Next
+                For i As Integer = 180 To r.FullMessage.Count - 1
+                    fragdata2.Add(r.FullMessage(i))
+                Next
+                Dim flags1 As Byte = (mavCurrentSeqID << 3) And &HFF
+                Dim flags2 As Byte = (mavCurrentSeqID << 3) And &HFF
+                flags1 += &H1
+                flags2 += &H3
+                Dim nowmsg1 As New Mavlink.MavlinkDefMessage.GPS_RTCM_DATA(mavCurrentSeqID, mavSystemID, mavComponentID, flags1, fragdata1.Count, fragdata1.ToArray)
+                Dim nowmsg2 As New Mavlink.MavlinkDefMessage.GPS_RTCM_DATA(mavCurrentSeqID, mavSystemID, mavComponentID, flags2, fragdata2.Count, fragdata2.ToArray)
+                Project.LogWrite.DynamicInvoke("[MavLink UDP 메세지 생성 완료]")
+                Dim snowmsg1 = nowmsg1.Serialize()
+                Dim snowmsg2 = nowmsg2.Serialize()
+                Project.LogWrite.DynamicInvoke("[MavLink UDP 메세지 직렬화 완료]")
+                UDPSender.Send(snowmsg1, snowmsg1.Count, UDPEndpoint)
+                UDPSender.Send(snowmsg2, snowmsg2.Count, UDPEndpoint)
+                Project.LogWrite.DynamicInvoke("[MavLink 분할 UDP 메세지 전송]" & vbCrLf & nowmsg1.ToString)
+                Project.LogWrite.DynamicInvoke("[MavLink 분할 UDP 메세지 전송]" & vbCrLf & nowmsg2.ToString)
+            Else
+                lstRawSerialPrint("[MavLink UDP 전송 요청] → ID : " & r.ID)
+                Dim flags As Byte = (mavCurrentSeqID << 3) And &HFF
+                lstRawSerialPrint("[MavLink UDP 전송 요청] → FLAG : " & flags)
+                Dim nowmsg As New Mavlink.MavlinkDefMessage.GPS_RTCM_DATA(mavCurrentSeqID, mavSystemID, mavComponentID, flags, r.FullMessage.Count, r.FullMessage)
+                Project.LogWrite.DynamicInvoke("[MavLink UDP 메세지 생성 완료]")
+                Dim snowmsg = nowmsg.Serialize()
+                Project.LogWrite.DynamicInvoke("[MavLink UDP 메세지 직렬화 완료]")
+                UDPSender.Send(snowmsg, snowmsg.Count, UDPEndpoint)
+                Project.LogWrite.DynamicInvoke("[MavLink UDP 메세지 전송]" & vbCrLf & nowmsg.ToString)
+            End If
+            If mavComponentID >= Byte.MaxValue Then
                 mavCurrentSeqID = 0
             Else
                 mavCurrentSeqID += 1
