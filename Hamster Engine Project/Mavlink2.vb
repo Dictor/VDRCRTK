@@ -27,7 +27,7 @@ Public Class Mavlink
                 payload.Add(flag)
                 payload.Add(length)
                 payload.AddRange(rtcmdata)
-                SetPayload(rtcmdata, DefMessageCRCExtra)
+                SetPayload(payload.ToArray, DefMessageCRCExtra)
             End Sub
         End Class
     End Class
@@ -126,6 +126,7 @@ Public Class Mavlink
             Else
                 Throw New MavlinkPayloadTooLargeException(data.Count)
             End If
+            Length = Payload.Count
             Dim crctemp As New List(Of Byte) From {Length, InCompatibleFlags, CompatibleFlags, Sequence, SystemID, ComponentID, MessageID And &HFF, (MessageID >> 8) And &HFF, (MessageID >> 16) And &HFF}
             crctemp.AddRange(Payload)
             crctemp.Add(crcextra)
@@ -143,7 +144,7 @@ Public Class Mavlink
             End If
             Dim data As New List(Of Byte) From {MagicMarker, Length, InCompatibleFlags, CompatibleFlags, Sequence, SystemID, ComponentID, MessageID And &HFF, (MessageID >> 8) And &HFF, (MessageID >> 16) And &HFF}
             data.AddRange(Payload)
-            data.AddRange({Checksum And &HFF, Checksum >> 8})
+            data.AddRange({Checksum And &HFF, (Checksum >> 8) And &HFF})
             Return data.ToArray
         End Function
 
